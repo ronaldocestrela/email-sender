@@ -15,6 +15,7 @@
   </Folder>
   <Folder Name="/Modules/TenantManagement/">
     <Project Path="Modules/TenantManagement/TenantManagement.Application/TenantManagement.Application.csproj" />
+    <Project Path="Modules/TenantManagement/TenantManagement.Domain.Tests/TenantManagement.Domain.Tests.csproj" />
     <Project Path="Modules/TenantManagement/TenantManagement.Domain/TenantManagement.Domain.csproj" />
     <Project Path="Modules/TenantManagement/TenantManagement.Infrastructure/TenantManagement.Infrastructure.csproj" />
   </Folder>

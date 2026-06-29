@@ -47,8 +47,9 @@ src/
 
 ## 📖 Documentação Adicional
 
-Para entender as diretrizes de desenvolvimento do time e o plano de ação, acesse os guias a seguir:
+Para entender as diretrizes de desenvolvimento do time, arquitetura e o plano de ação, acesse os guias a seguir:
 
+* **[ARCHITECTURE.md](file:///home/rony/LPR/email-sender/ARCHITECTURE.md) (Arquitetura e Guia de Desenvolvimento):** Detalhes das camadas hexagonais, matriz de referências entre projetos, estratégia de multi-tenancy e fluxo de mensageria assíncrona.
 * **[AGENTS.md](file:///home/rony/LPR/email-sender/AGENTS.md) (Diretrizes do Agente):** Regras de desenvolvimento, padrões de codificação (como o uso obrigatório de TDD, XML `<summary>` e Scalar) e o checklist de validação de PRs.
 * **[Roadmap.md](file:///home/rony/LPR/email-sender/Roadmap.md) (Roadmap de Execução):** Sequenciamento das fases de desenvolvimento, do setup inicial até o roteiro completo de testes manuais E2E.
 
@@ -67,7 +68,7 @@ Este projeto utiliza o servidor MCP **Stitch** para integrações de ferramentas
 2. **.NET 10 SDK:** SDK do .NET instalado na máquina de desenvolvimento.
 3. **Inicialização do Ambiente:**
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 4. **Execução das Migrações e Inicialização do Backend:**
    Consulte os roteiros específicos no arquivo [Roadmap.md](file:///home/rony/LPR/email-sender/Roadmap.md).

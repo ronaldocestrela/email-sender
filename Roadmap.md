@@ -38,13 +38,13 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 ## Fase 2: Implementação do Core e Domínio (Foco em TDD)
 
 ### Etapa 2.1: Módulo Tenant Management (TDD)
-- [ ] Criar o projeto de testes unitários `TenantManagement.Domain.Tests`.
-- [ ] **TDD - Ciclo Red/Green/Refactor:**
-  - [ ] Implementar testes para a criação do Agregado `Tenant` e validação de invariants.
-  - [ ] Implementar testes para o Value Object `ApiKey` (geração segura, formato e hash).
-  - [ ] Implementar testes para validação de domínios vinculados (`DomainName`).
-- [ ] Codificar o domínio puramente POCO no `TenantManagement.Domain` para satisfazer os testes.
-- [ ] Definir os Ports de saída (ex: `ITenantRepository`).
+- [x] Criar o projeto de testes unitários `TenantManagement.Domain.Tests`.
+- [x] **TDD - Ciclo Red/Green/Refactor:**
+  - [x] Implementar testes para a criação do Agregado `Tenant` e validação de invariants.
+  - [x] Implementar testes para o Value Object `ApiKey` (geração segura, formato e hash).
+  - [x] Implementar testes para validação de domínios vinculados (`DomainName`).
+- [x] Codificar o domínio puramente POCO no `TenantManagement.Domain` para satisfazer os testes.
+- [x] Definir os Ports de saída (ex: `ITenantRepository`).
 
 ### Etapa 2.2: Módulo Identity e Segurança (TDD)
 - [ ] Criar o projeto de testes `Identity.Domain.Tests`.
