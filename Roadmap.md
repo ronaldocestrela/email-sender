@@ -28,7 +28,7 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 - [x] Vincular todos os projetos criados à solução central.
 
 ### Etapa 1.2: Configuração do Ambiente de Apoio (Docker)
-- [ ] Criar um arquivo `docker-compose.yml` na raiz do projeto contendo:
+- [x] Criar um arquivo `docker-compose.yml` na raiz do projeto contendo:
   - Banco de Dados SQL Server.
   - Broker de Mensageria (RabbitMQ com painel de gerenciamento habilitado).
   - Ferramenta de teste de e-mail local (ex: Mailpit ou Mailhog) para capturar os envios SMTP sem disparar e-mails reais.
