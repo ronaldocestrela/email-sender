@@ -82,10 +82,10 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 - [x] Garantir que o consumidor execute injetando corretamente o `TenantId` no contexto da thread para fins de isolamento de banco.
 
 ### Etapa 4.2: Envio Físico de E-mail (Adapters)
-- [ ] Criar interfaces de envio no `EmailEngine.Application` (`IEmailSender`).
-- [ ] Implementar o Adapter SMTP apontando para o container Mailpit local.
-- [ ] Implementar o Adapter de produção (SendGrid ou AWS SES) configurável via variáveis de ambiente.
-- [ ] Implementar persistência de logs e histórico de envio no `EmailEngine.Domain`.
+- [x] Criar interfaces de envio no `EmailEngine.Application` (`IEmailSender`).
+- [x] Implementar o Adapter SMTP apontando para o container Mailpit local.
+- [x] Implementar o Adapter de produção (SendGrid ou AWS SES) configurável via variáveis de ambiente.
+- [x] Implementar persistência de logs e histórico de envio no `EmailEngine.Domain`.
 
 ---
 

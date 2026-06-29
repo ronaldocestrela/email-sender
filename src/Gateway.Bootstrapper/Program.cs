@@ -12,7 +12,10 @@ using TenantManagement.Infrastructure.Persistence;
 using TenantManagement.Infrastructure.Persistence.Repositories;
 using Identity.Infrastructure.Persistence;
 using EmailEngine.Infrastructure.Persistence;
+using EmailEngine.Infrastructure.Persistence.Repositories;
 using EmailEngine.Infrastructure.Consumers;
+using EmailEngine.Infrastructure.EmailSenders;
+using EmailEngine.Application.Ports;
 using EmailEngine.Application.UseCases;
 using MassTransit;
 
@@ -29,11 +32,20 @@ builder.Services.AddScoped<Identity.Application.Ports.ITenantProvider>(sp => sp.
 builder.Services.AddScoped<EmailEngine.Application.Ports.ITenantProvider>(sp => sp.GetRequiredService<TenantContext>());
 builder.Services.AddScoped<EmailEngine.Application.Ports.ITenantSetter>(sp => sp.GetRequiredService<TenantContext>());
 
-// 3. Registro de Casos de Uso e Repositórios
+// 3. Registro de Casos de Uso e Repositórios de Tenant Management
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
-builder.Services.AddScoped<ISendEmailUseCase, SendEmailUseCase>();
 
-// 4. Registro dos DbContexts com Tabelas de Histórico Separadas
+// 4. Registro de Casos de Uso, Adapters de Envio e Repositórios do Email Engine
+builder.Services.AddScoped<ISendEmailUseCase, SendEmailUseCase>();
+builder.Services.AddScoped<IEmailHistoryRepository, EmailHistoryRepository>();
+builder.Services.AddScoped<IEmailProviderSettingsRepository, EmailProviderSettingsRepository>();
+
+// Registro dos Adapters Físicos de Envio de E-mail
+builder.Services.AddScoped<SmtpEmailSender>();
+builder.Services.AddHttpClient<SendGridEmailSender>();
+builder.Services.AddScoped<IEmailSender, CompositeEmailSender>();
+
+// 5. Registro dos DbContexts com Tabelas de Histórico Separadas
 builder.Services.AddDbContext<TenantManagementDbContext>(options =>
     options.UseSqlServer(connectionString, o => 
         o.MigrationsHistoryTable("__TenantManagementMigrationsHistory")));
@@ -46,7 +58,7 @@ builder.Services.AddDbContext<EmailEngineDbContext>(options =>
     options.UseSqlServer(connectionString, o => 
         o.MigrationsHistoryTable("__EmailEngineMigrationsHistory")));
 
-// 5. Configuração do MassTransit com RabbitMQ
+// 6. Configuração do MassTransit com RabbitMQ (Versão 8.3.6)
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<SendEmailConsumer>();
@@ -72,13 +84,13 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
-// 6. Registro dos Controllers e OpenAPI
+// 7. Registro dos Controllers e OpenAPI
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// 7. Execução automática das Migrações Pendentes no Startup
+// 8. Execução automática das Migrações Pendentes no Startup
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -116,7 +128,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// 8. Registro do Middleware de Resolução de Tenant
+// 9. Registro do Middleware de Resolução de Tenant
 app.UseMiddleware<TenantResolutionMiddleware>();
 
 app.UseAuthorization();

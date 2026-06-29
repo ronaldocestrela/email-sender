@@ -5,6 +5,7 @@
   <Folder Name="/Modules/" />
   <Folder Name="/Modules/EmailEngine/">
     <Project Path="Modules/EmailEngine/EmailEngine.Application/EmailEngine.Application.csproj" />
+    <Project Path="Modules/EmailEngine/EmailEngine.Domain.Tests/EmailEngine.Domain.Tests.csproj" />
     <Project Path="Modules/EmailEngine/EmailEngine.Domain/EmailEngine.Domain.csproj" />
     <Project Path="Modules/EmailEngine/EmailEngine.Infrastructure/EmailEngine.Infrastructure.csproj" />
   </Folder>
