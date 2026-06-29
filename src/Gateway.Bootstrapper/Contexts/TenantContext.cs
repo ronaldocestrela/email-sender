@@ -5,12 +5,13 @@ namespace Gateway.Bootstrapper.Contexts;
 
 /// <summary>
 /// Contexto seguro para gerenciamento do escopo do Tenant de forma thread-safe por fluxo assíncrono.
-/// Implementa a interface de ITenantProvider de todos os módulos.
+/// Implementa as interfaces de ITenantProvider e ITenantSetter de todos os módulos.
 /// </summary>
 public class TenantContext : 
     TenantManagement.Application.Ports.ITenantProvider,
     Identity.Application.Ports.ITenantProvider,
-    EmailEngine.Application.Ports.ITenantProvider
+    EmailEngine.Application.Ports.ITenantProvider,
+    EmailEngine.Application.Ports.ITenantSetter
 {
     private static readonly AsyncLocal<Guid> _currentTenantId = new();
 
@@ -29,7 +30,7 @@ public class TenantContext :
     }
 
     /// <summary>
-    /// Define de forma de instância o ID do Tenant para injeção via DI.
+    /// Define de forma de instância o ID do Tenant para injeção via DI (como ITenantSetter).
     /// </summary>
     /// <param name="tenantId">O ID do Tenant resolvido.</param>
     public void SetTenantId(Guid tenantId)

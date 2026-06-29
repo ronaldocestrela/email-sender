@@ -76,10 +76,10 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 ## Fase 4: Engine de E-mail e Mensageria Assíncrona
 
 ### Etapa 4.1: Mensageria com MassTransit e RabbitMQ
-- [ ] Criar os contratos de mensagem (ex: `SendEmailCommand`) e registrar o MassTransit no `Gateway.Bootstrapper`.
-- [ ] Configurar a conexão com o container do RabbitMQ.
-- [ ] Implementar o `SendEmailConsumer` no `EmailEngine.Infrastructure` que consome as mensagens da fila.
-- [ ] Garantir que o consumidor execute injetando corretamente o `TenantId` no contexto da thread para fins de isolamento de banco.
+- [x] Criar os contratos de mensagem (ex: `SendEmailCommand`) e registrar o MassTransit no `Gateway.Bootstrapper`.
+- [x] Configurar a conexão com o container do RabbitMQ.
+- [x] Implementar o `SendEmailConsumer` no `EmailEngine.Infrastructure` que consome as mensagens da fila.
+- [x] Garantir que o consumidor execute injetando corretamente o `TenantId` no contexto da thread para fins de isolamento de banco.
 
 ### Etapa 4.2: Envio Físico de E-mail (Adapters)
 - [ ] Criar interfaces de envio no `EmailEngine.Application` (`IEmailSender`).

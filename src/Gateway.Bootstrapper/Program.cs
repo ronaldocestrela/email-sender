@@ -12,6 +12,9 @@ using TenantManagement.Infrastructure.Persistence;
 using TenantManagement.Infrastructure.Persistence.Repositories;
 using Identity.Infrastructure.Persistence;
 using EmailEngine.Infrastructure.Persistence;
+using EmailEngine.Infrastructure.Consumers;
+using EmailEngine.Application.UseCases;
+using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,9 +27,11 @@ builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<TenantManagement.Application.Ports.ITenantProvider>(sp => sp.GetRequiredService<TenantContext>());
 builder.Services.AddScoped<Identity.Application.Ports.ITenantProvider>(sp => sp.GetRequiredService<TenantContext>());
 builder.Services.AddScoped<EmailEngine.Application.Ports.ITenantProvider>(sp => sp.GetRequiredService<TenantContext>());
+builder.Services.AddScoped<EmailEngine.Application.Ports.ITenantSetter>(sp => sp.GetRequiredService<TenantContext>());
 
-// 3. Registro de Repositórios de Infraestrutura
+// 3. Registro de Casos de Uso e Repositórios
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
+builder.Services.AddScoped<ISendEmailUseCase, SendEmailUseCase>();
 
 // 4. Registro dos DbContexts com Tabelas de Histórico Separadas
 builder.Services.AddDbContext<TenantManagementDbContext>(options =>
@@ -41,13 +46,39 @@ builder.Services.AddDbContext<EmailEngineDbContext>(options =>
     options.UseSqlServer(connectionString, o => 
         o.MigrationsHistoryTable("__EmailEngineMigrationsHistory")));
 
-// 5. Registro dos Controllers e OpenAPI
+// 5. Configuração do MassTransit com RabbitMQ
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<SendEmailConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var host = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+        var username = builder.Configuration["RabbitMQ:Username"] ?? "guest";
+        var password = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+
+        cfg.Host(host, "/", h =>
+        {
+            h.Username(username);
+            h.Password(password);
+        });
+
+        // Configuração de endpoint com política de retentativas
+        cfg.ReceiveEndpoint("send-email-command", e =>
+        {
+            e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+            e.ConfigureConsumer<SendEmailConsumer>(context);
+        });
+    });
+});
+
+// 6. Registro dos Controllers e OpenAPI
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// 6. Execução automática das Migrações Pendentes no Startup
+// 7. Execução automática das Migrações Pendentes no Startup
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -85,7 +116,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// 7. Registro do Middleware de Resolução de Tenant
+// 8. Registro do Middleware de Resolução de Tenant
 app.UseMiddleware<TenantResolutionMiddleware>();
 
 app.UseAuthorization();
