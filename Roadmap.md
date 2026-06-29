@@ -47,11 +47,11 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 - [x] Definir os Ports de saída (ex: `ITenantRepository`).
 
 ### Etapa 2.2: Módulo Identity e Segurança (TDD)
-- [ ] Criar o projeto de testes `Identity.Domain.Tests`.
-- [ ] **TDD - Ciclo Red/Green/Refactor:**
-  - [ ] Implementar testes de criação de `User` vinculando ao `TenantId`.
-  - [ ] Implementar testes de validação de papéis (`Roles`) e políticas multi-tenant.
-- [ ] Desenhar os casos de uso no `Identity.Application`:
+- [x] Criar o projeto de testes `Identity.Domain.Tests`.
+- [x] **TDD - Ciclo Red/Green/Refactor:**
+  - [x] Implementar testes de criação de `User` vinculando ao `TenantId`.
+  - [x] Implementar testes de validação de papéis (`Roles`) e políticas multi-tenant.
+- [x] Desenhar os casos de uso no `Identity.Application`:
   - Login e geração de Tokens JWT contendo as Claims de `TenantId` e `Role`.
   - Geração e verificação de Multi-Factor Authentication (MFA).
 
