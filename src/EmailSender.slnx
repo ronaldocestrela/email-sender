@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/Frontend/">
+    <Project Path="Frontend/Gateway.Blazor/Gateway.Blazor.csproj" />
+  </Folder>
+  <Folder Name="/Modules/" />
+  <Folder Name="/Modules/EmailEngine/">
+    <Project Path="Modules/EmailEngine/EmailEngine.Application/EmailEngine.Application.csproj" />
+    <Project Path="Modules/EmailEngine/EmailEngine.Domain/EmailEngine.Domain.csproj" />
+    <Project Path="Modules/EmailEngine/EmailEngine.Infrastructure/EmailEngine.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Identity/">
+    <Project Path="Modules/Identity/Identity.Application/Identity.Application.csproj" />
+    <Project Path="Modules/Identity/Identity.Domain/Identity.Domain.csproj" />
+    <Project Path="Modules/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Modules/TenantManagement/">
+    <Project Path="Modules/TenantManagement/TenantManagement.Application/TenantManagement.Application.csproj" />
+    <Project Path="Modules/TenantManagement/TenantManagement.Domain/TenantManagement.Domain.csproj" />
+    <Project Path="Modules/TenantManagement/TenantManagement.Infrastructure/TenantManagement.Infrastructure.csproj" />
+  </Folder>
+  <Project Path="Gateway.Bootstrapper/Gateway.Bootstrapper.csproj" />
+</Solution>

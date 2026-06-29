@@ -10,22 +10,22 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 ## Fase 1: Setup do Ambiente e Estrutura da Solução
 
 ### Etapa 1.1: Inicialização da Estrutura de Diretórios e Solução
-- [ ] Criar a solução principal do .NET 10 (`EmailSender.sln`) na raiz `src/`.
-- [ ] Criar os projetos do módulo `TenantManagement`:
+- [x] Criar a solução principal do .NET 10 (`EmailSender.slnx`) na raiz `src/`.
+- [x] Criar os projetos do módulo `TenantManagement`:
   - `Modules/TenantManagement/TenantManagement.Domain` (Class Library)
   - `Modules/TenantManagement/TenantManagement.Application` (Class Library)
   - `Modules/TenantManagement/TenantManagement.Infrastructure` (Class Library)
-- [ ] Criar os projetos do módulo `Identity`:
+- [x] Criar os projetos do módulo `Identity`:
   - `Modules/Identity/Identity.Domain` (Class Library)
   - `Modules/Identity/Identity.Application` (Class Library)
   - `Modules/Identity/Identity.Infrastructure` (Class Library)
-- [ ] Criar os projetos do módulo `EmailEngine`:
+- [x] Criar os projetos do módulo `EmailEngine`:
   - `Modules/EmailEngine/EmailEngine.Domain` (Class Library)
   - `Modules/EmailEngine/EmailEngine.Application` (Class Library)
   - `Modules/EmailEngine/EmailEngine.Infrastructure` (Class Library)
-- [ ] Criar o Gateway centralizador `Gateway.Bootstrapper` (ASP.NET Core Web API).
-- [ ] Criar o Frontend `Gateway.Blazor` (Blazor WebAssembly ou Interactive Auto).
-- [ ] Vincular todos os projetos criados à solução central.
+- [x] Criar o Gateway centralizador `Gateway.Bootstrapper` (ASP.NET Core Web API).
+- [x] Criar o Frontend `Gateway.Blazor` (Blazor WebAssembly ou Interactive Auto).
+- [x] Vincular todos os projetos criados à solução central.
 
 ### Etapa 1.2: Configuração do Ambiente de Apoio (Docker)
 - [ ] Criar um arquivo `docker-compose.yml` na raiz do projeto contendo:

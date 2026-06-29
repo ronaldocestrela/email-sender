@@ -1,0 +1,6 @@
+@Gateway.Bootstrapper_HostAddress = http://localhost:5090
+
+GET {{Gateway.Bootstrapper_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
