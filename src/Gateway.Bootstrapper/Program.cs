@@ -5,8 +5,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
-using Gateway.Bootstrapper.Providers;
+using Gateway.Bootstrapper.Contexts;
+using Gateway.Bootstrapper.Middlewares;
+using TenantManagement.Domain.Ports;
 using TenantManagement.Infrastructure.Persistence;
+using TenantManagement.Infrastructure.Persistence.Repositories;
 using Identity.Infrastructure.Persistence;
 using EmailEngine.Infrastructure.Persistence;
 
@@ -16,13 +19,16 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? throw new InvalidOperationException("A string de conexão 'DefaultConnection' não foi encontrada.");
 
-// 2. Registro do Provedor de Tenant temporário para todos os módulos
-builder.Services.AddScoped<MockTenantProvider>();
-builder.Services.AddScoped<TenantManagement.Application.Ports.ITenantProvider>(sp => sp.GetRequiredService<MockTenantProvider>());
-builder.Services.AddScoped<Identity.Application.Ports.ITenantProvider>(sp => sp.GetRequiredService<MockTenantProvider>());
-builder.Services.AddScoped<EmailEngine.Application.Ports.ITenantProvider>(sp => sp.GetRequiredService<MockTenantProvider>());
+// 2. Registro do Provedor de Tenant Real (AsyncLocal) para todos os módulos
+builder.Services.AddScoped<TenantContext>();
+builder.Services.AddScoped<TenantManagement.Application.Ports.ITenantProvider>(sp => sp.GetRequiredService<TenantContext>());
+builder.Services.AddScoped<Identity.Application.Ports.ITenantProvider>(sp => sp.GetRequiredService<TenantContext>());
+builder.Services.AddScoped<EmailEngine.Application.Ports.ITenantProvider>(sp => sp.GetRequiredService<TenantContext>());
 
-// 3. Registro dos DbContexts com Tabelas de Histórico Separadas
+// 3. Registro de Repositórios de Infraestrutura
+builder.Services.AddScoped<ITenantRepository, TenantRepository>();
+
+// 4. Registro dos DbContexts com Tabelas de Histórico Separadas
 builder.Services.AddDbContext<TenantManagementDbContext>(options =>
     options.UseSqlServer(connectionString, o => 
         o.MigrationsHistoryTable("__TenantManagementMigrationsHistory")));
@@ -35,13 +41,13 @@ builder.Services.AddDbContext<EmailEngineDbContext>(options =>
     options.UseSqlServer(connectionString, o => 
         o.MigrationsHistoryTable("__EmailEngineMigrationsHistory")));
 
-// 4. Registro dos Controllers e OpenAPI
+// 5. Registro dos Controllers e OpenAPI
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// 5. Execução automática das Migrações Pendentes no Startup
+// 6. Execução automática das Migrações Pendentes no Startup
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -78,6 +84,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// 7. Registro do Middleware de Resolução de Tenant
+app.UseMiddleware<TenantResolutionMiddleware>();
 
 app.UseAuthorization();
 

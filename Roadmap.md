@@ -66,10 +66,10 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 - [x] Gerar as primeiras migrations dos módulos e configurar o mecanismo de execução de migrations na inicialização do Bootstrapper.
 
 ### Etapa 3.2: Middleware de Resolução de Tenant
-- [ ] Desenvolver um middleware HTTP no `Gateway.Bootstrapper` para identificar o Tenant atual por:
+- [x] Desenvolver um middleware HTTP no `Gateway.Bootstrapper` para identificar o Tenant atual por:
   - Header HTTP `X-API-KEY` (para integrações externas).
   - Claim `TenantId` extraída do Token JWT (para usuários do Blazor Dashboard).
-- [ ] Criar uma classe com escopo de requisição (`TenantContext`) para armazenar e expor o `TenantId` resolvido.
+- [x] Criar uma classe com escopo de requisição (`TenantContext`) para armazenar e expor o `TenantId` resolvido.
 
 ---
 
