@@ -60,10 +60,10 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 ## Fase 3: Camada de Persistência e Isolamento Multi-Tenant
 
 ### Etapa 3.1: Configuração do EF Core e Migrations
-- [ ] Instalar o Entity Framework Core 10 nos projetos de infraestrutura correspondentes.
-- [ ] Configurar a interface `IMustHaveTenant` e mapeamento global do filtro de consulta no `DbContext` compartilhado ou específico de cada módulo.
-- [ ] Sobrescrever o método `SaveChangesAsync` nos DbContexts para autodefinir e aplicar o `TenantId` do contexto atual para novas entidades.
-- [ ] Gerar as primeiras migrations dos módulos e configurar o mecanismo de execução de migrations na inicialização do Bootstrapper.
+- [x] Instalar o Entity Framework Core 10 nos projetos de infraestrutura correspondentes.
+- [x] Configurar a interface `IMustHaveTenant` e mapeamento global do filtro de consulta no `DbContext` compartilhado ou específico de cada módulo.
+- [x] Sobrescrever o método `SaveChangesAsync` nos DbContexts para autodefinir e aplicar o `TenantId` do contexto atual para novas entidades.
+- [x] Gerar as primeiras migrations dos módulos e configurar o mecanismo de execução de migrations na inicialização do Bootstrapper.
 
 ### Etapa 3.2: Middleware de Resolução de Tenant
 - [ ] Desenvolver um middleware HTTP no `Gateway.Bootstrapper` para identificar o Tenant atual por:
