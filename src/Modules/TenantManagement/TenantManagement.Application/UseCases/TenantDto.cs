@@ -21,3 +21,14 @@ public record ApiKeyResponse(
     string Description,
     DateTime CreatedAt
 );
+
+/// <summary>
+/// DTO de resposta contendo os detalhes de um domínio do Tenant.
+/// </summary>
+public record TenantDomainResponse(
+    Guid Id,
+    string Value,
+    bool IsVerified,
+    string VerificationToken,
+    DateTime? VerifiedAt
+);

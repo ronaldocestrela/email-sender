@@ -53,14 +53,12 @@ public static class DatabaseSeeder
             var tenant = tenantResult.Value;
 
             // 3. Adicionar Domínio Principal Associado
-            var domainResult = DomainName.Create("admintent.com");
-            if (domainResult.IsFailure)
+            var addDomainResult = tenant.AddDomain("admintent.com", isVerified: true);
+            if (addDomainResult.IsFailure)
             {
-                logger.LogError("Falha ao criar Domínio de semente: {Error}", domainResult.Error.Message);
+                logger.LogError("Falha ao criar Domínio de semente: {Error}", addDomainResult.Error.Message);
                 return;
             }
-
-            tenant.AddDomain(domainResult.Value);
 
             // 4. Gerar Chave de API de Teste
             var apiKeyResult = tenant.GenerateApiKey("Chave de Teste Inicial");

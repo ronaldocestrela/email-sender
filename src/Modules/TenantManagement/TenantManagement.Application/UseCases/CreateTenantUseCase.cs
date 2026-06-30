@@ -48,7 +48,7 @@ public class CreateTenantUseCase : ICreateTenantUseCase
         }
 
         var tenant = result.Value;
-        var addDomainResult = tenant.AddDomain(domainResult.Value);
+        var addDomainResult = tenant.AddDomain(mainDomain, isVerified: true);
         if (addDomainResult.IsFailure)
         {
             return Result<TenantResponse>.Failure(addDomainResult.Error);

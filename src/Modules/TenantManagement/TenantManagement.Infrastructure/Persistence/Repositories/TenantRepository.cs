@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TenantManagement.Domain.Aggregates;
+using TenantManagement.Domain.Entities;
 using TenantManagement.Domain.Ports;
 
 namespace TenantManagement.Infrastructure.Persistence.Repositories;
@@ -26,7 +28,10 @@ public class TenantRepository : ITenantRepository
     /// </summary>
     public async Task<Tenant?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _context.Tenants.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+        return await _context.Tenants
+            .Include(t => t.LinkedDomains)
+            .Include(t => t.ApiKeys)
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
     }
 
     /// <summary>
@@ -40,6 +45,8 @@ public class TenantRepository : ITenantRepository
         }
 
         return await _context.Tenants
+            .Include(t => t.LinkedDomains)
+            .Include(t => t.ApiKeys)
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(t => t.ApiKeys.Any(k => k.KeyHash.Equals(apiKeyHash, StringComparison.OrdinalIgnoreCase) && !k.IsRevoked), cancellationToken);
     }
@@ -55,10 +62,13 @@ public class TenantRepository : ITenantRepository
         }
 
         await _context.Tenants.AddAsync(tenant, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>
     /// Atualiza o estado de um Tenant existente.
+    /// Quando a entidade já está rastreada pelo contexto (fluxo típico após GetByIdAsync),
+    /// persiste apenas as alterações detectadas pelo change tracker sem reanexar o grafo.
     /// </summary>
     public async Task UpdateAsync(Tenant tenant, CancellationToken cancellationToken = default)
     {
@@ -67,8 +77,73 @@ public class TenantRepository : ITenantRepository
             throw new ArgumentNullException(nameof(tenant));
         }
 
-        _context.Tenants.Update(tenant);
-        await Task.CompletedTask;
+        var entry = _context.Entry(tenant);
+
+        if (entry.State == EntityState.Detached)
+        {
+            _context.Tenants.Attach(tenant);
+            entry.State = EntityState.Unchanged;
+        }
+        else if (entry.State == EntityState.Modified && !entry.Properties.Any(p => p.IsModified))
+        {
+            // Evita UPDATE desnecessário na raiz quando apenas coleções owned foram alteradas.
+            entry.State = EntityState.Unchanged;
+        }
+
+        _context.ChangeTracker.DetectChanges();
+        await NormalizeOwnedEntityStatesAsync(tenant, cancellationToken);
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Corrige owned entities recém-adicionadas ao agregado que o EF Core marca incorretamente como Modified.
+    /// Isso ocorre quando coleções encapsuladas usam backing fields privados.
+    /// </summary>
+    private async Task NormalizeOwnedEntityStatesAsync(Tenant tenant, CancellationToken cancellationToken)
+    {
+        var modifiedOwnedEntries = _context.ChangeTracker.Entries()
+            .Where(e => e.Metadata.IsOwned() && e.State == EntityState.Modified)
+            .ToList();
+
+        if (modifiedOwnedEntries.Count == 0)
+        {
+            return;
+        }
+
+        var existingIds = await _context.Tenants
+            .AsNoTracking()
+            .Where(t => t.Id == tenant.Id)
+            .Select(t => new
+            {
+                DomainIds = t.LinkedDomains.Select(d => d.Id).ToList(),
+                ApiKeyIds = t.ApiKeys.Select(k => EF.Property<Guid>(k, "Id")).ToList()
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var existingDomainIds = existingIds?.DomainIds.ToHashSet() ?? new HashSet<Guid>();
+        var existingApiKeyIds = existingIds?.ApiKeyIds.ToHashSet() ?? new HashSet<Guid>();
+
+        foreach (var ownedEntry in modifiedOwnedEntries)
+        {
+            var idProperty = ownedEntry.Properties.FirstOrDefault(p => p.Metadata.Name == "Id");
+            if (idProperty?.CurrentValue is not Guid entityId)
+            {
+                continue;
+            }
+
+            var existsInDatabase = ownedEntry.Metadata.ClrType.Name switch
+            {
+                nameof(TenantDomain) => existingDomainIds.Contains(entityId),
+                nameof(ApiKey) => existingApiKeyIds.Contains(entityId),
+                _ => true
+            };
+
+            if (!existsInDatabase)
+            {
+                ownedEntry.State = EntityState.Added;
+            }
+        }
     }
 
     /// <summary>
@@ -76,6 +151,9 @@ public class TenantRepository : ITenantRepository
     /// </summary>
     public async Task<System.Collections.Generic.List<Tenant>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.Tenants.ToListAsync(cancellationToken);
+        return await _context.Tenants
+            .Include(t => t.LinkedDomains)
+            .Include(t => t.ApiKeys)
+            .ToListAsync(cancellationToken);
     }
 }

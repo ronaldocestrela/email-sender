@@ -13,6 +13,8 @@ O módulo segue a divisão hexagonal com isolamento absoluto de dados:
        │             TenantManagement.Application               │
        │                      (Use Cases)                       │
        │    CreateTenantUseCase, GenerateApiKeyUseCase,         │
+       │    AddTenantDomainUseCase, GetTenantDomainsUseCase,    │
+       │    VerifyTenantDomainUseCase, RemoveTenantDomainUseCase│
        │    GetTenantsUseCase, GetApiKeysUseCase,               │
        │    RevokeApiKeyUseCase                                 │
        └──────────┬──────────────────────────────────┬──────────┘
@@ -45,6 +47,9 @@ Centraliza os conceitos de inquilinato utilizando agregados com invariantes ríg
     * `ApiKeys`: Lista de chaves de acesso.
 * **DomainName (Value Object):** [DomainName.cs](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Domain/ValueObjects/DomainName.cs)
   * Valida a sintaxe do domínio (regex RFC) e garante letras minúsculas (normalização).
+* **TenantDomain (Entity):** [TenantDomain.cs](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Domain/Entities/TenantDomain.cs)
+  * Representa um domínio vinculado ao Tenant com status de verificação DNS (`IsVerified`, `VerificationToken`, `VerifiedAt`).
+  * Persistido como owned entity na tabela `TenantDomains`.
 * **ApiKey (Entity):** [ApiKey.cs](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Domain/Entities/ApiKey.cs)
   * Credencial de autenticação.
   * **PlainTextKey (Chave em texto plano):** Gerada dinamicamente com caracteres seguros e exposta **apenas uma única vez** no momento de criação no DTO de resposta.
@@ -64,6 +69,8 @@ Centraliza os conceitos de inquilinato utilizando agregados com invariantes ríg
     * Carrega o Tenant correspondente pelo ID.
     * Invoca a geração de ApiKey de domínio, anexando-a à coleção do aggregate.
     * Salva as alterações e retorna a resposta com a chave em texto plano.
+  * `AddTenantDomainUseCase`, `GetTenantDomainsUseCase`, `VerifyTenantDomainUseCase`, `RemoveTenantDomainUseCase`: [TenantDomainUseCases.cs](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Application/UseCases/TenantDomainUseCases.cs)
+    * Gerenciam o ciclo de vida dos domínios vinculados ao Tenant (cadastro, listagem, verificação DNS e remoção).
   * `GetTenantsUseCase`, `GetApiKeysUseCase` e `RevokeApiKeyUseCase`: [TenantQueries.cs](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Application/UseCases/TenantQueries.cs)
     * Casos de uso de leitura e controle administrativo para recuperar Tenants (Admin), listar as ApiKeys ativas/revogadas do inquilino atual e revogar tokens em tempo de execução.
 
@@ -75,14 +82,36 @@ Centraliza os conceitos de inquilinato utilizando agregados com invariantes ríg
 ## 4. Camada de Infraestrutura (`TenantManagement.Infrastructure`)
 
 * **Persistence (EF Core):** [TenantManagementDbContext.cs](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Infrastructure/Persistence/TenantManagementDbContext.cs)
-  * Mapeia `DomainName` como uma coleção própria pertencente à tabela `TenantDomains`.
-  * Mapeia `ApiKey` como uma tabela associada `TenantApiKeys`.
+  * Mapeia `TenantDomain` como owned entity na tabela `TenantDomains` (colunas: `Domain`, `IsVerified`, `VerificationToken`, `VerifiedAt`).
+  * Mapeia `ApiKey` como owned entity na tabela `TenantApiKeys`.
+  * Coleções encapsuladas (`LinkedDomains`, `ApiKeys`) usam **backing fields privados** (`_linkedDomains`, `_apiKeys`) configurados após `OwnsMany` para permitir mutações pelo agregado DDD.
 * **Repository Implementation:** [TenantRepository.cs](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Infrastructure/Persistence/Repositories/TenantRepository.cs)
+  * **UpdateAsync:** Não reanexa entidades já rastreadas com `Update()`. Executa `DetectChanges()` e normaliza owned entities recém-adicionadas de `Modified` para `Added` antes do `SaveChangesAsync` — corrige falha silenciosa no cadastro de domínios.
   * **Bypass de Filtro Global no Middleware:** O middleware HTTP de autenticação executa `GetByApiKeyHashAsync` para resolver o `TenantId` da requisição. Como o context do Tenant ainda não está populado, esta consulta obrigatoriamente aplica `.IgnoreQueryFilters()` para poder buscar o hash nas chaves de API globais.
 
 ---
 
-## 5. Manutenção e Diretrizes de Modificação
+## 5. Migrações e Schema de Domínios
+
+As migrações do módulo devem estar aplicadas no banco alvo:
+
+| Migração | Descrição |
+|----------|-----------|
+| `20260629231032_InitialCreate` | Cria tabelas `Tenants`, `TenantDomains` e `TenantApiKeys`. |
+| `20260630142130_UpdateTenantDomainsTable` | Adiciona `IsVerified`, `VerificationToken` e `VerifiedAt` em `TenantDomains`. |
+
+Para aplicar: `dotnet ef database update --project src/Modules/TenantManagement/TenantManagement.Infrastructure --startup-project src/Gateway.Bootstrapper`
+
+---
+
+## 6. Testes
+
+* **Unitários (Domain):** [TenantManagement.Domain.Tests](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Domain.Tests) — invariantes do agregado `Tenant` e `DomainName`.
+* **Integração (Infrastructure):** [TenantManagement.Infrastructure.Tests](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Infrastructure.Tests) — persistência de domínios via `AddTenantDomainUseCase` e `UpdateAsync` com SQLite in-memory.
+
+---
+
+## 7. Manutenção e Diretrizes de Modificação
 
 1. **Alterar Estrutura de Chave de API:** Se o tamanho ou formato do gerador criptográfico de ApiKey mudar, isso deve ser alterado no factory method `ApiKey.Create(...)` de domínio.
 2. **Consultas a Nível Administrativo:** Sempre que for criada uma query administrativa global (ex: Admin geral do SaaS listando inquilinos), lembre-se de usar `.IgnoreQueryFilters()` no DbSet do EF Core para desviar do comportamento padrão que restringe registros ao inquilino da requisição atual.

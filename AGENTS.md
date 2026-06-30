@@ -303,3 +303,12 @@ Para mais detalhes sobre as responsabilidades, diagramas e padrões específicos
 * [Módulo Email Engine](file:///home/rony/LPR/email-sender/docs/email_engine_module.md)
 * [Gateway Bootstrapper & Multi-Tenancy](file:///home/rony/LPR/email-sender/docs/gateway_bootstrapper.md)
 
+---
+
+## 10. Verificação de Domínios por DNS TXT
+O sistema restringe o disparo de e-mails para remetentes que possuam domínio verificado e ativo no Tenant.
+* **Mapeamento:** A coleção `LinkedDomains` no agregado `Tenant` gerencia a entidade `TenantDomain` contendo `IsVerified` e `VerificationToken`.
+* **Fluxo de Verificação:** Realizado de forma assíncrona por meio do `DnsService` que valida as entradas DNS TXT do domínio utilizando a biblioteca `DnsClient` antes de atualizar o status de verificação no banco.
+* **Bloqueio no Envio:** O `SendEmailUseCase` no módulo `EmailEngine` valida o domínio através da porta `IEmailTenantDomainVerifier` implementada no Bootstrapper. Se o domínio não estiver verificado, o disparo é recusado com erro e gravado no histórico de auditoria.
+
+

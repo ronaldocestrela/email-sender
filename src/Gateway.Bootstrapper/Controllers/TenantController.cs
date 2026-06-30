@@ -20,6 +20,10 @@ public class TenantController : ApiControllerBase
     private readonly IGetApiKeysUseCase _getApiKeysUseCase;
     private readonly IRevokeApiKeyUseCase _revokeApiKeyUseCase;
     private readonly ITenantProvider _tenantProvider;
+    private readonly IAddTenantDomainUseCase _addTenantDomainUseCase;
+    private readonly IRemoveTenantDomainUseCase _removeTenantDomainUseCase;
+    private readonly IGetTenantDomainsUseCase _getTenantDomainsUseCase;
+    private readonly IVerifyTenantDomainUseCase _verifyTenantDomainUseCase;
 
     public TenantController(
         ICreateTenantUseCase createTenantUseCase,
@@ -27,7 +31,11 @@ public class TenantController : ApiControllerBase
         IGetTenantsUseCase getTenantsUseCase,
         IGetApiKeysUseCase getApiKeysUseCase,
         IRevokeApiKeyUseCase revokeApiKeyUseCase,
-        ITenantProvider tenantProvider)
+        ITenantProvider tenantProvider,
+        IAddTenantDomainUseCase addTenantDomainUseCase,
+        IRemoveTenantDomainUseCase removeTenantDomainUseCase,
+        IGetTenantDomainsUseCase getTenantDomainsUseCase,
+        IVerifyTenantDomainUseCase verifyTenantDomainUseCase)
     {
         _createTenantUseCase = createTenantUseCase;
         _generateApiKeyUseCase = generateApiKeyUseCase;
@@ -35,6 +43,10 @@ public class TenantController : ApiControllerBase
         _getApiKeysUseCase = getApiKeysUseCase;
         _revokeApiKeyUseCase = revokeApiKeyUseCase;
         _tenantProvider = tenantProvider;
+        _addTenantDomainUseCase = addTenantDomainUseCase;
+        _removeTenantDomainUseCase = removeTenantDomainUseCase;
+        _getTenantDomainsUseCase = getTenantDomainsUseCase;
+        _verifyTenantDomainUseCase = verifyTenantDomainUseCase;
     }
 
     /// <summary>
@@ -126,6 +138,89 @@ public class TenantController : ApiControllerBase
         var result = await _revokeApiKeyUseCase.ExecuteAsync(tenantId, keyHash, cancellationToken);
         return HandleResult(result);
     }
+
+    /// <summary>
+    /// Lista os domínios configurados para o Tenant autenticado.
+    /// </summary>
+    [Authorize]
+    [HttpGet("domains")]
+    public async Task<ActionResult> ListDomains(CancellationToken cancellationToken)
+    {
+        var tenantId = _tenantProvider.TenantId;
+        if (tenantId == Guid.Empty)
+        {
+            return Unauthorized("Inquilino não identificado no contexto da requisição.");
+        }
+
+        var result = await _getTenantDomainsUseCase.ExecuteAsync(tenantId, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Adiciona um novo domínio (não verificado por padrão) para o Tenant autenticado.
+    /// </summary>
+    [Authorize]
+    [HttpPost("domains")]
+    public async Task<ActionResult> AddDomain([FromBody] AddDomainRequest request, CancellationToken cancellationToken)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.Domain))
+        {
+            return BadRequest("O domínio é obrigatório.");
+        }
+
+        var tenantId = _tenantProvider.TenantId;
+        if (tenantId == Guid.Empty)
+        {
+            return Unauthorized("Inquilino não identificado no contexto da requisição.");
+        }
+
+        var result = await _addTenantDomainUseCase.ExecuteAsync(tenantId, request.Domain, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Remove um domínio cadastrado do Tenant autenticado.
+    /// </summary>
+    [Authorize]
+    [HttpDelete("domains/{domain}")]
+    public async Task<ActionResult> RemoveDomain(string domain, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(domain))
+        {
+            return BadRequest("O domínio é obrigatório.");
+        }
+
+        var tenantId = _tenantProvider.TenantId;
+        if (tenantId == Guid.Empty)
+        {
+            return Unauthorized("Inquilino não identificado no contexto da requisição.");
+        }
+
+        var result = await _removeTenantDomainUseCase.ExecuteAsync(tenantId, domain, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Solicita a verificação de um domínio via consulta de registros DNS TXT.
+    /// </summary>
+    [Authorize]
+    [HttpPost("domains/{domain}/verify")]
+    public async Task<ActionResult> VerifyDomain(string domain, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(domain))
+        {
+            return BadRequest("O domínio é obrigatório.");
+        }
+
+        var tenantId = _tenantProvider.TenantId;
+        if (tenantId == Guid.Empty)
+        {
+            return Unauthorized("Inquilino não identificado no contexto da requisição.");
+        }
+
+        var result = await _verifyTenantDomainUseCase.ExecuteAsync(tenantId, domain, cancellationToken);
+        return HandleResult(result);
+    }
 }
 
 /// <summary>
@@ -137,3 +232,8 @@ public record CreateTenantRequest(string Name, string MainDomain);
 /// Parâmetros de geração de chave de API.
 /// </summary>
 public record GenerateApiKeyRequest(string Description);
+
+/// <summary>
+/// Parâmetros de adição de domínio.
+/// </summary>
+public record AddDomainRequest(string Domain);

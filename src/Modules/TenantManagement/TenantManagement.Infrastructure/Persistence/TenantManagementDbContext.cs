@@ -50,7 +50,7 @@ public class TenantManagementDbContext : DbContext
             // Configura o filtro global para a raiz do Agregado Tenant
             builder.HasQueryFilter(t => t.Id == CurrentTenantId);
 
-            // Mapeamento da coleção de DomainNames (Owned type)
+            // Mapeamento da coleção de TenantDomains (Owned type)
             builder.OwnsMany(t => t.LinkedDomains, d =>
             {
                 d.ToTable("TenantDomains");
@@ -58,6 +58,9 @@ public class TenantManagementDbContext : DbContext
                 d.Property<Guid>("Id");
                 d.HasKey("Id");
                 d.Property(x => x.Value).HasColumnName("Domain").IsRequired().HasMaxLength(255);
+                d.Property(x => x.IsVerified).HasColumnName("IsVerified").IsRequired().HasDefaultValue(false);
+                d.Property(x => x.VerificationToken).HasColumnName("VerificationToken").IsRequired().HasMaxLength(100);
+                d.Property(x => x.VerifiedAt).HasColumnName("VerifiedAt");
             });
 
             // Mapeamento da coleção de ApiKeys (Owned type)
@@ -73,6 +76,15 @@ public class TenantManagementDbContext : DbContext
                 k.Property(x => x.IsRevoked).IsRequired();
                 k.Ignore(x => x.PlainTextKey);
             });
+
+            // Backing fields privados — configurados após OwnsMany para rastrear mutações do agregado
+            builder.Navigation(t => t.LinkedDomains)
+                .HasField("_linkedDomains")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            builder.Navigation(t => t.ApiKeys)
+                .HasField("_apiKeys")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         // Configuração dinâmica para todas as entidades IMustHaveTenant

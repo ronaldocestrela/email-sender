@@ -1,0 +1,395 @@
+@page "/domains"
+@attribute [Authorize]
+@using Gateway.Blazor.Models
+@using Gateway.Blazor.Helpers
+@using System.Globalization
+
+<PageTitle>Meus Domínios - Email Sender</PageTitle>
+
+<div class="dashboard-header mb-4">
+    <div>
+        <h1 class="page-title">Configurações de Domínio</h1>
+        <p class="text-secondary">Cadastre e autentique seus domínios corporativos para habilitar disparos personalizados</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Lista de Domínios -->
+    <div class="col-lg-8">
+        <div class="glass-panel">
+            <h3 class="section-title mb-4">Domínios Autorizados</h3>
+
+            @if (_isLoading && _domains.Count == 0)
+            {
+                <div class="loading-container">
+                    <div class="spinner-premium"></div>
+                    <div class="loading-text">Carregando domínios...</div>
+                </div>
+            }
+            else if (_domains.Count == 0)
+            {
+                <div class="empty-state py-5 text-center">
+                    <svg class="text-muted mb-3" viewBox="0 0 24 24" width="48" height="48"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    <h4 class="text-secondary">Nenhum domínio configurado</h4>
+                    <p class="text-muted text-sm">Registre seu primeiro domínio de disparo utilizando o formulário lateral.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-premium">
+                        <thead>
+                            <tr>
+                                <th>Domínio</th>
+                                <th>Status</th>
+                                <th>Verificado Em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var domain in _domains)
+                            {
+                                var d = domain;
+                                <tr class="align-middle @(SelectedDomain?.Id == d.Id ? "table-active-premium" : "")" @onclick="() => SelectDomain(d)" style="cursor: pointer;">
+                                    <td><strong class="text-light">@d.Value</strong></td>
+                                    <td>
+                                        @if (d.IsVerified)
+                                        {
+                                            <span class="badge badge-success">Verificado</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-warning">Aguardando DNS</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="text-secondary text-sm">
+                                            @(d.VerifiedAt.HasValue ? d.VerifiedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture) : "-")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2" @onclick:stopPropagation="true">
+                                            @if (!d.IsVerified)
+                                            {
+                                                <button class="btn btn-sm btn-premium d-flex align-items-center gap-1" @onclick="() => HandleVerify(d.Value)" disabled="@_isActionLoading">
+                                                    <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                                    Verificar
+                                                </button>
+                                            }
+                                            <button class="btn btn-sm btn-outline-danger border-glass" @onclick="() => HandleRemove(d.Value)" disabled="@_isActionLoading">
+                                                Remover
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        @if (SelectedDomain != null)
+        {
+            <div class="glass-panel mt-4 fade-in">
+                <h3 class="section-title mb-3">Configuração DNS para: <span class="text-primary-gradient">@SelectedDomain.Value</span></h3>
+                <p class="text-secondary text-sm mb-4">
+                    Adicione o seguinte registro TXT nas configurações de DNS da sua zona de domínio (ex: Cloudflare, GoDaddy, Registro.br) para validar a propriedade.
+                </p>
+
+                <div class="dns-config-table p-3 rounded bg-dark border-glass mb-3">
+                    <div class="row g-2 mb-2 pb-2 border-bottom-glass text-secondary text-xs font-mono">
+                        <div class="col-3">TIPO</div>
+                        <div class="col-3">NOME (HOST)</div>
+                        <div class="col-6">VALOR CORRESPONDENTE</div>
+                    </div>
+                    <div class="row g-2 align-items-center font-mono text-sm text-light">
+                        <div class="col-3"><span class="badge bg-secondary font-mono">TXT</span></div>
+                        <div class="col-3">@SelectedDomain.Value</div>
+                        <div class="col-6 text-break">
+                            <span class="user-select-all text-info">@SelectedDomain.VerificationToken</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!SelectedDomain.IsVerified)
+                {
+                    <div class="alert-premium alert-premium-warning">
+                        <svg viewBox="0 0 24 24" width="20" height="20" class="me-2"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                        <span>Após salvar as entradas de DNS, aguarde alguns instantes pela propagação e clique no botão **Verificar** acima.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert-premium alert-premium-success">
+                        <svg viewBox="0 0 24 24" width="20" height="20" class="me-2"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        <span>Este domínio está verificado com sucesso e autorizado para realizar disparos.</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Cadastrar Domínio -->
+    <div class="col-lg-4">
+        <div class="glass-panel">
+            <h3 class="section-title mb-3">Registrar Novo Domínio</h3>
+            <p class="text-secondary text-sm mb-4">
+                Insira o domínio raiz ou subdomínio que deseja utilizar como remetente autorizado.
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(_successMessage))
+            {
+                <div class="alert-premium alert-premium-success mb-4">
+                    <span>@_successMessage</span>
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <div class="alert-premium alert-premium-danger mb-4">
+                    <span>@_errorMessage</span>
+                </div>
+            }
+
+            <EditForm Model="@_addModel" OnValidSubmit="HandleAdd">
+                <DataAnnotationsValidator />
+
+                <div class="form-group-premium">
+                    <label for="domainName">Nome do Domínio</label>
+                    <InputText id="domainName" class="input-premium" @bind-Value="_addModel.Domain" placeholder="ex: disparos.suaempresa.com" />
+                    <ValidationMessage For="@(() => _addModel.Domain)" />
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn-premium w-100" disabled="@(_isLoading || _isActionLoading)">
+                        @if (_isActionLoading)
+                        {
+                            <span>Cadastrando...</span>
+                        }
+                        else
+                        {
+                            <span>Cadastrar Domínio</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] private HttpClient HttpClient { get; set; } = default!;
+
+    private List<TenantDomainResponse> _domains = new();
+    private readonly LocalAddDomainModel _addModel = new();
+    private bool _isLoading = false;
+    private bool _isActionLoading = false;
+    private string? _successMessage;
+    private string? _errorMessage;
+    private TenantDomainResponse? SelectedDomain { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDomains();
+    }
+
+    private async Task LoadDomains()
+    {
+        _isLoading = true;
+        try
+        {
+            var response = await HttpClient.GetAsync("api/tenants/domains");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ClientResult<List<TenantDomainResponse>>>();
+                if (result != null && result.IsSuccess && result.Value != null)
+                {
+                    _domains = result.Value;
+
+                    // Mantém a seleção se o domínio ainda existir
+                    if (SelectedDomain != null)
+                    {
+                        SelectedDomain = _domains.FirstOrDefault(d => d.Id == SelectedDomain.Id);
+                    }
+                    else if (_domains.Count > 0)
+                    {
+                        SelectedDomain = _domains.First();
+                    }
+                }
+                else
+                {
+                    _errorMessage = result?.Error?.Message ?? "Não foi possível carregar a lista de domínios.";
+                }
+            }
+            else
+            {
+                _errorMessage = await ApiResponseHelper.ReadErrorMessageAsync(response, "Não foi possível carregar a lista de domínios.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Erro ao carregar domínios: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void SelectDomain(TenantDomainResponse domain)
+    {
+        SelectedDomain = domain;
+        _errorMessage = null;
+        _successMessage = null;
+    }
+
+    private async Task HandleAdd()
+    {
+        _isActionLoading = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var normalizedDomain = _addModel.Domain.Trim().ToLowerInvariant();
+            var request = new AddDomainRequest(normalizedDomain);
+            var response = await HttpClient.PostAsJsonAsync("api/tenants/domains", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ClientResult<TenantDomainResponse>>();
+                if (result != null && result.IsSuccess && result.Value != null)
+                {
+                    _successMessage = $"Domínio '{normalizedDomain}' registrado com sucesso. Siga as instruções DNS abaixo para ativá-lo.";
+                    _addModel.Domain = "";
+                    SelectedDomain = result.Value;
+                    await LoadDomains();
+                }
+                else
+                {
+                    _errorMessage = result?.Error?.Message ?? "Erro ao cadastrar domínio.";
+                }
+            }
+            else
+            {
+                _errorMessage = await ApiResponseHelper.ReadErrorMessageAsync(response, "Erro ao enviar requisição de cadastro.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Erro de rede: {ex.Message}";
+        }
+        finally
+        {
+            _isActionLoading = false;
+        }
+    }
+
+    private async Task HandleVerify(string domainValue)
+    {
+        _isActionLoading = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var encodedDomain = Uri.EscapeDataString(domainValue);
+            var response = await HttpClient.PostAsync($"api/tenants/domains/{encodedDomain}/verify", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ClientResult<TenantDomainResponse>>();
+                if (result != null && result.IsSuccess && result.Value != null)
+                {
+                    _successMessage = $"Domínio '{domainValue}' verificado com sucesso!";
+                    SelectedDomain = result.Value;
+                    await LoadDomains();
+                }
+                else
+                {
+                    _errorMessage = result?.Error?.Message ?? "A verificação falhou. Confirme se as chaves DNS propagaram.";
+                }
+            }
+            else
+            {
+                _errorMessage = await ApiResponseHelper.ReadErrorMessageAsync(response, "Erro ao solicitar verificação do domínio.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Erro de rede: {ex.Message}";
+        }
+        finally
+        {
+            _isActionLoading = false;
+        }
+    }
+
+    private async Task HandleRemove(string domainValue)
+    {
+        _isActionLoading = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var encodedDomain = Uri.EscapeDataString(domainValue);
+            var response = await HttpClient.DeleteAsync($"api/tenants/domains/{encodedDomain}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                _successMessage = $"Domínio '{domainValue}' removido com sucesso.";
+                if (SelectedDomain?.Value.Equals(domainValue, StringComparison.OrdinalIgnoreCase) ?? false)
+                {
+                    SelectedDomain = null;
+                }
+                await LoadDomains();
+            }
+            else
+            {
+                _errorMessage = await ApiResponseHelper.ReadErrorMessageAsync(response, "Erro ao solicitar remoção de domínio.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Erro de rede: {ex.Message}";
+        }
+        finally
+        {
+            _isActionLoading = false;
+        }
+    }
+
+    public class LocalAddDomainModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "O nome do domínio é obrigatório.")]
+        [System.ComponentModel.DataAnnotations.RegularExpression(ApiResponseHelper.DomainValidationPattern, ErrorMessage = "Insira um formato de domínio válido (ex: disparos.empresa.com).")]
+        public string Domain { get; set; } = string.Empty;
+    }
+}
+
+<style>
+.table-active-premium {
+    background: rgba(220, 220, 255, 0.05) !important;
+}
+.dns-config-table {
+    background: rgba(15, 23, 42, 0.95) !important;
+}
+.text-xs {
+    font-size: 0.75rem;
+}
+.text-break {
+    word-break: break-all;
+}
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+@@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.w-100 {
+    width: 100%;
+}
+</style>

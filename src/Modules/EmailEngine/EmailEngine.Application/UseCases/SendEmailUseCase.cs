@@ -30,17 +30,20 @@ public class SendEmailUseCase : ISendEmailUseCase
     private readonly IEmailHistoryRepository _emailHistoryRepository;
     private readonly IEmailProviderSettingsRepository _providerSettingsRepository;
     private readonly IConfiguration _configuration;
+    private readonly IEmailTenantDomainVerifier _domainVerifier;
 
     public SendEmailUseCase(
         IEmailSender emailSender,
         IEmailHistoryRepository emailHistoryRepository,
         IEmailProviderSettingsRepository providerSettingsRepository,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IEmailTenantDomainVerifier domainVerifier)
     {
         _emailSender = emailSender;
         _emailHistoryRepository = emailHistoryRepository;
         _providerSettingsRepository = providerSettingsRepository;
         _configuration = configuration;
+        _domainVerifier = domainVerifier;
     }
 
     /// <summary>
@@ -53,21 +56,47 @@ public class SendEmailUseCase : ISendEmailUseCase
             return Result.Failure(new Error("EmailEngine.NullCommand", "O comando de envio não pode ser nulo."));
         }
 
-        // 1. Busca configurações customizadas do Tenant atual
+        var subject = command.Subject ?? string.Empty;
+        var body = command.Body ?? string.Empty;
+
+        // 1. Valida se o domínio de envio está cadastrado e verificado para o Tenant
+        var isDomainVerified = await _domainVerifier.IsDomainVerifiedAsync(command.TenantId, command.SenderDomain, cancellationToken);
+        if (!isDomainVerified)
+        {
+            var verificationError = new Error("EmailEngine.DomainNotVerified", $"O domínio '{command.SenderDomain}' não está verificado para este inquilino.");
+
+            // Grava histórico de erro no banco
+            var failedHistoryResult = EmailHistory.Create(
+                command.TenantId,
+                command.To,
+                subject,
+                body,
+                command.SenderDomain,
+                isSuccess: false,
+                errorMessage: verificationError.Message);
+
+            if (failedHistoryResult.IsSuccess)
+            {
+                await _emailHistoryRepository.AddAsync(failedHistoryResult.Value, cancellationToken);
+            }
+
+            return Result.Failure(verificationError);
+        }
+
+        // 2. Busca configurações customizadas do Tenant atual (se houver)
         var customSettings = await _providerSettingsRepository.GetByTenantIdAsync(command.TenantId, cancellationToken);
 
-        // 2. Resolve Remetente Padrão (Customizado do Tenant ou Default do Sistema)
+        // 3. Resolve Remetente Padrão (Customizado do Tenant ou gerado dinamicamente a partir do domínio verificado)
         var senderAddress = customSettings?.SenderAddress 
-            ?? _configuration["EmailSettings:SenderAddress"] 
-            ?? "noreply@system.com";
+            ?? $"noreply@{command.SenderDomain.Trim().ToLowerInvariant()}";
 
         var senderName = customSettings?.SenderName 
             ?? _configuration["EmailSettings:SenderName"] 
             ?? "System Sender";
 
         // 3. Processa Substituição de Variáveis de Template (se houver)
-        var body = command.Body ?? string.Empty;
-        var subject = command.Subject ?? string.Empty;
+        body = command.Body ?? string.Empty;
+        subject = command.Subject ?? string.Empty;
 
         if (command.TemplateVariables != null)
         {

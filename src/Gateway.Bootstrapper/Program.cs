@@ -62,6 +62,11 @@ builder.Services.AddScoped<IGenerateApiKeyUseCase, GenerateApiKeyUseCase>();
 builder.Services.AddScoped<IGetTenantsUseCase, GetTenantsUseCase>();
 builder.Services.AddScoped<IGetApiKeysUseCase, GetApiKeysUseCase>();
 builder.Services.AddScoped<IRevokeApiKeyUseCase, RevokeApiKeyUseCase>();
+builder.Services.AddScoped<TenantManagement.Application.Ports.IDnsService, TenantManagement.Infrastructure.Services.DnsService>();
+builder.Services.AddScoped<IAddTenantDomainUseCase, AddTenantDomainUseCase>();
+builder.Services.AddScoped<IRemoveTenantDomainUseCase, RemoveTenantDomainUseCase>();
+builder.Services.AddScoped<IGetTenantDomainsUseCase, GetTenantDomainsUseCase>();
+builder.Services.AddScoped<IVerifyTenantDomainUseCase, VerifyTenantDomainUseCase>();
 
 // 4. Registro de Adapters, Serviços e Casos de Uso do Módulo Identity
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -76,6 +81,7 @@ builder.Services.AddScoped<ISendEmailUseCase, SendEmailUseCase>();
 builder.Services.AddScoped<IGetEmailHistoryUseCase, GetEmailHistoryUseCase>();
 builder.Services.AddScoped<IEmailHistoryRepository, EmailHistoryRepository>();
 builder.Services.AddScoped<IEmailProviderSettingsRepository, EmailProviderSettingsRepository>();
+builder.Services.AddScoped<EmailEngine.Application.Ports.IEmailTenantDomainVerifier, Gateway.Bootstrapper.Providers.TenantDomainVerifier>();
 
 // Registro dos Adapters Físicos de Envio de E-mail
 builder.Services.AddScoped<SmtpEmailSender>();

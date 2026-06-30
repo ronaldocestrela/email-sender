@@ -146,3 +146,21 @@ public record SendEmailRequest(
     [property: JsonPropertyName("senderDomain")] string SenderDomain,
     [property: JsonPropertyName("templateVariables")] Dictionary<string, string> TemplateVariables
 );
+
+/// <summary>
+/// Payload para adição de domínio.
+/// </summary>
+public record AddDomainRequest(
+    [property: JsonPropertyName("domain")] string Domain
+);
+
+/// <summary>
+/// Detalhes de um domínio do Tenant.
+/// </summary>
+public record TenantDomainResponse(
+    [property: JsonPropertyName("id")] Guid Id,
+    [property: JsonPropertyName("value")] string Value,
+    [property: JsonPropertyName("isVerified")] bool IsVerified,
+    [property: JsonPropertyName("verificationToken")] string VerificationToken,
+    [property: JsonPropertyName("verifiedAt")] DateTime? VerifiedAt
+);

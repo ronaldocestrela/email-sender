@@ -49,11 +49,11 @@ public class TenantResolutionMiddleware
         else if (context.User.Identity?.IsAuthenticated == true)
         {
             var logger = context.RequestServices.GetRequiredService<ILogger<TenantResolutionMiddleware>>();
-            logger.LogWarning("DEBUG: Autenticado. Total Claims: {Count}", context.User.Claims.Count());
-            foreach (var claim in context.User.Claims)
-            {
-                logger.LogWarning("DEBUG: Claim Type: {Type}, Value: {Value}", claim.Type, claim.Value);
-            }
+            // logger.LogWarning("DEBUG: Autenticado. Total Claims: {Count}", context.User.Claims.Count());
+            // foreach (var claim in context.User.Claims)
+            // {
+            //     logger.LogWarning("DEBUG: Claim Type: {Type}, Value: {Value}", claim.Type, claim.Value);
+            // }
 
             var tenantIdClaim = context.User.Claims.FirstOrDefault(c => c.Type.Equals("TenantId", StringComparison.OrdinalIgnoreCase));
             if (tenantIdClaim != null && Guid.TryParse(tenantIdClaim.Value, out var tenantId))

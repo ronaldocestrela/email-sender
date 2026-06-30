@@ -35,8 +35,8 @@ public class Tenant
     /// <summary>
     /// Domínios autorizados associados a este Tenant.
     /// </summary>
-    public IReadOnlyCollection<DomainName> LinkedDomains => _linkedDomains.AsReadOnly();
-    private readonly List<DomainName> _linkedDomains = new();
+    public IReadOnlyCollection<TenantDomain> LinkedDomains => _linkedDomains.AsReadOnly();
+    private readonly List<TenantDomain> _linkedDomains = new();
 
     /// <summary>
     /// Chaves de API registradas para este Tenant.
@@ -70,45 +70,80 @@ public class Tenant
     }
 
     /// <summary>
-    /// Adiciona um domínio verificado ao Tenant, garantindo que não seja duplicado.
+    /// Adiciona um domínio ao Tenant, garantindo que não seja duplicado.
     /// </summary>
-    /// <param name="domain">O Value Object contendo o nome do domínio.</param>
+    /// <param name="domain">O nome do domínio a ser associado.</param>
+    /// <param name="isVerified">Define se o domínio já é criado como verificado.</param>
     /// <returns>Resultado indicando sucesso ou falha na inclusão.</returns>
-    public Result AddDomain(DomainName domain)
+    public Result AddDomain(string domain, bool isVerified = false)
     {
-        if (domain == null)
+        if (string.IsNullOrWhiteSpace(domain))
         {
-            return Result.Failure(Error.NullValue);
+            return Result.Failure(new Error("Tenant.InvalidDomain", "O nome do domínio não pode ser vazio."));
         }
 
-        if (_linkedDomains.Any(d => d.Value.Equals(domain.Value, StringComparison.OrdinalIgnoreCase)))
+        var domainClean = domain.Trim().ToLowerInvariant();
+
+        if (_linkedDomains.Any(d => d.Value.Equals(domainClean, StringComparison.OrdinalIgnoreCase)))
         {
             return Result.Failure(new Error("Tenant.DuplicateDomain", "Este domínio já está associado a este Tenant."));
         }
 
-        _linkedDomains.Add(domain);
+        var tenantDomainResult = TenantDomain.Create(domain, isVerified);
+        if (tenantDomainResult.IsFailure)
+        {
+            return Result.Failure(tenantDomainResult.Error);
+        }
+
+        _linkedDomains.Add(tenantDomainResult.Value);
         return Result.Success();
     }
 
     /// <summary>
     /// Remove um domínio associado se ele existir.
     /// </summary>
-    /// <param name="domain">O Value Object contendo o nome do domínio.</param>
+    /// <param name="domain">O nome do domínio a ser removido.</param>
     /// <returns>Resultado indicando sucesso ou falha na remoção.</returns>
-    public Result RemoveDomain(DomainName domain)
+    public Result RemoveDomain(string domain)
     {
-        if (domain == null)
+        if (string.IsNullOrWhiteSpace(domain))
         {
-            return Result.Failure(Error.NullValue);
+            return Result.Failure(new Error("Tenant.InvalidDomain", "O nome do domínio não pode ser vazio."));
         }
 
-        var existingDomain = _linkedDomains.FirstOrDefault(d => d.Value.Equals(domain.Value, StringComparison.OrdinalIgnoreCase));
+        var domainClean = domain.Trim().ToLowerInvariant();
+
+        var existingDomain = _linkedDomains.FirstOrDefault(d => d.Value.Equals(domainClean, StringComparison.OrdinalIgnoreCase));
         if (existingDomain == null)
         {
             return Result.Failure(new Error("Tenant.DomainNotFound", "O domínio especificado não foi encontrado neste Tenant."));
         }
 
         _linkedDomains.Remove(existingDomain);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Marca um domínio cadastrado como verificado.
+    /// </summary>
+    /// <param name="domain">O nome do domínio a ser verificado.</param>
+    /// <returns>Resultado indicando sucesso ou falha.</returns>
+    public Result VerifyDomain(string domain)
+    {
+        if (string.IsNullOrWhiteSpace(domain))
+        {
+            return Result.Failure(new Error("Tenant.InvalidDomain", "O nome do domínio não pode ser vazio."));
+        }
+
+        var domainClean = domain.Trim().ToLowerInvariant();
+
+        var existingDomain = _linkedDomains.FirstOrDefault(d => d.Value.Equals(domainClean, StringComparison.OrdinalIgnoreCase));
+        if (existingDomain == null)
+        {
+            return Result.Failure(new Error("Tenant.DomainNotFound", "O domínio especificado não foi encontrado neste Tenant."));
+        }
+
+        existingDomain.Verify();
         return Result.Success();
     }
 

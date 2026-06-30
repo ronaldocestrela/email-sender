@@ -37,22 +37,17 @@ public class TenantTests
     {
         // Arrange
         var tenant = Tenant.Create("Acme").Value;
-        
-        // Crio um mock temporário de DomainName na fase Red. 
-        // Como o Create de DomainName retorna falha por padrão na fase RED,
-        // nos testes unitários vamos instanciar ou assumir que o DomainName passe (ou mockar).
-        // Mas como DomainName é um record, podemos forçar a criação para o teste ou usar a factory.
-        // Esperamos que na fase GREEN o DomainName.Create retorne sucesso.
-        var domainResult = DomainName.Create("acme.com");
-        Assert.True(domainResult.IsSuccess, "DomainName creation should pass in Phase Green");
-        var domain = domainResult.Value;
+        var domain = "acme.com";
 
         // Act
         var result = tenant.AddDomain(domain);
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Contains(domain, tenant.LinkedDomains);
+        Assert.Contains(tenant.LinkedDomains, d => d.Value == domain);
+        var addedDomain = tenant.LinkedDomains.First(d => d.Value == domain);
+        Assert.False(addedDomain.IsVerified);
+        Assert.NotNull(addedDomain.VerificationToken);
     }
 
     [Fact]
@@ -60,7 +55,7 @@ public class TenantTests
     {
         // Arrange
         var tenant = Tenant.Create("Acme").Value;
-        var domain = DomainName.Create("acme.com").Value;
+        var domain = "acme.com";
         tenant.AddDomain(domain);
 
         // Act
@@ -103,5 +98,23 @@ public class TenantTests
         // Assert
         Assert.True(result.IsSuccess);
         Assert.True(apiKey.IsRevoked);
+    }
+
+    [Fact]
+    public void GivenTenantWithUnverifiedDomain_WhenVerifyingDomain_ShouldMarkAsVerified()
+    {
+        // Arrange
+        var tenant = Tenant.Create("Acme").Value;
+        var domain = "acme.com";
+        tenant.AddDomain(domain);
+
+        // Act
+        var result = tenant.VerifyDomain(domain);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var tenantDomain = tenant.LinkedDomains.First(d => d.Value == domain);
+        Assert.True(tenantDomain.IsVerified);
+        Assert.NotNull(tenantDomain.VerifiedAt);
     }
 }
