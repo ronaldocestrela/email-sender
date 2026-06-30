@@ -108,9 +108,9 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 ## Fase 6: Frontend Blazor (Gateway.Blazor)
 
 ### Etapa 6.1: Setup da Interface e Comunicação
-- [ ] Inicializar o projeto Blazor e desacoplar das referências diretas das classes de backend.
-- [ ] Implementar um HttpClient customizado (ou HTTP Handler) que anexa automaticamente o Token JWT ou a `ApiKey` nos cabeçalhos das requisições.
-- [ ] Implementar componentes básicos de layout utilizando CSS moderno e customizado (responsividade, paleta de cores elegantes e transições suaves).
+- [x] Inicializar o projeto Blazor e desacoplar das referências diretas das classes de backend.
+- [x] Implementar um HttpClient customizado (ou HTTP Handler) que anexa automaticamente o Token JWT ou a `ApiKey` nos cabeçalhos das requisições.
+- [x] Implementar componentes básicos de layout utilizando CSS moderno e customizado (responsividade, paleta de cores elegantes e transições suaves).
 
 ### Etapa 6.2: Construção das Páginas Administrativas
 - [ ] Tela de Login / Cadastro e configuração inicial do MFA.

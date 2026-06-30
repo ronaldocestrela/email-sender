@@ -1,16 +1,56 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@using Gateway.Blazor.Security
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+        <header class="top-row px-4">
+            <AuthorizeView>
+                <Authorized>
+                    <div class="user-section">
+                        <span class="user-info me-3">
+                            Conectado: <strong class="text-indigo">@context.User.Identity?.Name</strong>
+                            <span class="tenant-badge">Tenant: @GetTenantId(context.User)</span>
+                        </span>
+                        <button class="btn btn-sm btn-logout" @onclick="HandleLogout">
+                            <svg class="logout-icon" viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="currentColor" d="M16 17v-3H9v-4h7V7l5 5-5 5M14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
+                            </svg>
+                            Sair
+                        </button>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="/login" class="btn-login-header">Entrar</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </header>
 
         <article class="content px-4">
             @Body
         </article>
     </main>
 </div>
+
+@code {
+    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private async Task HandleLogout()
+    {
+        if (AuthStateProvider is JwtAuthenticationStateProvider jwtProvider)
+        {
+            await jwtProvider.MarkUserAsLoggedOut();
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private string GetTenantId(System.Security.Claims.ClaimsPrincipal user)
+    {
+        return user.FindFirst("TenantId")?.Value ?? "N/A";
+    }
+}

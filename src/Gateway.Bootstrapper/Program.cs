@@ -32,6 +32,17 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Registro do serviço CORS para permitir chamadas do Frontend Blazor
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 // 1. Configurações de Conexão com Banco de Dados SQL Server
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? throw new InvalidOperationException("A string de conexão 'DefaultConnection' não foi encontrada.");
@@ -218,6 +229,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // 11. Registro do Middleware de Resolução de Tenant e Autenticação
+app.UseCors();
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
