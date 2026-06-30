@@ -124,9 +124,9 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 ## Fase 7: Homologação e Teste Manual E2E (Ponta a Ponta)
 
 ### Etapa 7.1: Preparação do Ambiente de Teste Manual
-- [ ] Iniciar todos os containers locais (`docker-compose up -d`).
-- [ ] Executar migrações do banco de dados.
-- [ ] Criar um script inicial (Seeder) para gerar o primeiro Tenant Administrativo e uma ApiKey de teste.
+- [x] Iniciar todos os containers locais (`docker-compose up -d`).
+- [x] Executar migrações do banco de dados.
+- [x] Criar um script inicial (Seeder) para gerar o primeiro Tenant Administrativo e uma ApiKey de teste.
 
 ### Etapa 7.2: Roteiro do Teste Manual Ponta a Ponta
 - [ ] **Teste 1: Acesso ao Scalar e Validação de Tenant**

@@ -23,6 +23,7 @@ using EmailEngine.Infrastructure.Persistence.Repositories;
 using EmailEngine.Infrastructure.Consumers;
 using EmailEngine.Infrastructure.EmailSenders;
 using EmailEngine.Application.Ports;
+using Gateway.Bootstrapper.Persistence;
 using EmailEngine.Application.UseCases;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -209,10 +210,13 @@ using (var scope = app.Services.CreateScope())
         await emailContext.Database.MigrateAsync();
 
         logger.LogInformation("Todas as migrações aplicadas com sucesso.");
+
+        logger.LogInformation("Executando semeamento do banco de dados...");
+        await DatabaseSeeder.SeedAsync(services);
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Ocorreu um erro catastrófico ao migrar os bancos de dados.");
+        logger.LogError(ex, "Ocorreu um erro catastrófico ao migrar/semear os bancos de dados.");
     }
 }
 
