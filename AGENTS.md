@@ -294,3 +294,12 @@ Quando você (Agente de IA) receber a ordem para criar uma nova funcionalidade, 
 ## 8. Integração com MCP Stitch
 * **Ferramenta de Apoio:** Este projeto utiliza o MCP Server Stitch para integrações de ferramentas adicionais de apoio ao desenvolvimento. O console do projeto no Stitch correspondente está disponível em: [Stitch Project 13296040073188886497](https://stitch.withgoogle.com/projects/13296040073188886497).
 
+---
+
+## 9. Documentações de Módulos (Docs Detalhadas)
+Para mais detalhes sobre as responsabilidades, diagramas e padrões específicos de cada componente, consulte os arquivos de documentação técnica:
+* [Módulo Identity](file:///home/rony/LPR/email-sender/docs/identity_module.md)
+* [Módulo Tenant Management](file:///home/rony/LPR/email-sender/docs/tenant_management_module.md)
+* [Módulo Email Engine](file:///home/rony/LPR/email-sender/docs/email_engine_module.md)
+* [Gateway Bootstrapper & Multi-Tenancy](file:///home/rony/LPR/email-sender/docs/gateway_bootstrapper.md)
+
