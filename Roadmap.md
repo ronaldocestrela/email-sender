@@ -92,16 +92,16 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 ## Fase 5: Exposição da API Gateway e Documentação
 
 ### Etapa 5.1: Criação dos Endpoints HTTP
-- [ ] Desenvolver controllers HTTP ou endpoints mínimos (Minimal APIs) para:
+- [x] Desenvolver controllers HTTP ou endpoints mínimos (Minimal APIs) para:
   - Autenticação e MFA.
   - Cadastro de Tenants e geração de ApiKeys.
   - Solicitação assíncrona de disparo de e-mail (envia o comando para a fila).
-- [ ] Garantir que todas as APIs retornem resultados padronizados usando o `Result Pattern`.
+- [x] Garantir que todas as APIs retornem resultados padronizados usando o `Result Pattern`.
 
 ### Etapa 5.2: OpenAPI + Scalar
-- [ ] Adicionar suporte ao OpenAPI (.NET 10 OpenAPI Generator/Swashbuckle/Microsoft.AspNetCore.OpenApi).
-- [ ] Configurar a renderização interativa do **Scalar** no pipeline de middlewares para facilitar testes manuais.
-- [ ] Documentar todos os endpoints públicos com a tag `<summary>`.
+- [x] Adicionar suporte ao OpenAPI (.NET 10 OpenAPI Generator/Swashbuckle/Microsoft.AspNetCore.OpenApi).
+- [x] Configurar a renderização interativa do **Scalar** no pipeline de middlewares para facilitar testes manuais.
+- [x] Documentar todos os endpoints públicos com a tag `<summary>`.
 
 ---
 
