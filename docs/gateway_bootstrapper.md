@@ -62,7 +62,7 @@ A ordem dos middlewares no [Program.cs](file:///home/rony/LPR/email-sender/src/G
 
 * **Autenticação JWT:** Configurada no container DI utilizando autenticação padrão baseada em token Bearer simétrico (`Microsoft.AspNetCore.Authentication.JwtBearer`).
 * **OpenAPI + Scalar UI:** O Scalar é exposto em `/scalar/v1` em modo de Desenvolvimento, fornecendo o playground interativo já mapeado com os esquemas de autenticação Bearer e ApiKey.
-* **Migrações Automáticas & Seeder:** No startup, o monólito recupera os três DbContexts sequencialmente e executa o método `Database.MigrateAsync()`, garantindo que as tabelas existam. Logo após, invoca o [DatabaseSeeder.cs](file:///home/rony/LPR/email-sender/src/Gateway.Bootstrapper/Persistence/DatabaseSeeder.cs) para verificar e semear o inquilino principal, a chave de API de testes e o usuário administrador caso o banco esteja vazio.
+* **Migrações Automáticas & Seeder:** No startup, o monólito recupera os três DbContexts sequencialmente e executa o método `Database.MigrateAsync()`, garantindo que as tabelas existam. Logo após, invoca o [DatabaseSeeder.cs](file:///home/rony/LPR/email-sender/src/Gateway.Bootstrapper/Persistence/DatabaseSeeder.cs), que consulta Tenants e Users com `.IgnoreQueryFilters()` (necessário porque `CurrentTenantId` ainda é vazio no startup) e só semeia o inquilino principal, a chave de API de testes e o usuário administrador quando o banco estiver vazio.
 * **Política de CORS:** Configurada no container DI do `Gateway.Bootstrapper` para permitir que o cliente Blazor rodando localmente consuma de forma transparente os recursos expostos pela API.
 
 ---

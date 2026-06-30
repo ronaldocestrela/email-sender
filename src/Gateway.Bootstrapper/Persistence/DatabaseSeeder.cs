@@ -33,10 +33,14 @@ public static class DatabaseSeeder
 
         try
         {
-            // 1. Verifica se já existem Tenants cadastrados no sistema
-            if (await tenantContext.Tenants.AnyAsync())
+            // 1. Verifica se já existem Tenants cadastrados no sistema.
+            // IgnoreQueryFilters é necessário: no startup CurrentTenantId é Guid.Empty e o filtro global ocultaria todos os registros.
+            var hasExistingData = await tenantContext.Tenants.IgnoreQueryFilters().AnyAsync()
+                || await identityContext.Users.IgnoreQueryFilters().AnyAsync();
+
+            if (hasExistingData)
             {
-                logger.LogInformation("O banco de dados já possui inquilinos cadastrados. Pulando semeamento.");
+                logger.LogInformation("O banco de dados já possui dados cadastrados. Pulando semeamento.");
                 return;
             }
 
