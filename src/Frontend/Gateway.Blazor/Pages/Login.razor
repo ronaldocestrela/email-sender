@@ -1,0 +1,182 @@
+@page "/login"
+@layout Layout.MainLayout
+@using Gateway.Blazor.Models
+@using Gateway.Blazor.Security
+
+<PageTitle>Login - Email Sender</PageTitle>
+
+<div class="login-wrapper">
+    <div class="glass-panel login-card">
+        <div class="text-center mb-4">
+            <svg class="brand-logo mb-2" viewBox="0 0 24 24" width="48" height="48">
+                <path fill="currentColor" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+            </svg>
+            <h2 class="auth-title">Acesso ao Painel</h2>
+            <p class="text-secondary text-sm">Entre com suas credenciais corporativas</p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_errorMessage))
+        {
+            <div class="alert-premium alert-premium-danger mb-4">
+                <svg viewBox="0 0 24 24" width="20" height="20" class="me-2"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span>@_errorMessage</span>
+            </div>
+        }
+
+        <EditForm Model="@_loginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            @if (!_requiresMfa)
+            {
+                <div class="form-group-premium">
+                    <label for="email">E-mail Corporativo</label>
+                    <InputText id="email" type="email" class="input-premium" @bind-Value="_loginModel.Email" placeholder="nome@empresa.com" />
+                    <ValidationMessage For="@(() => _loginModel.Email)" />
+                </div>
+
+                <div class="form-group-premium">
+                    <label for="password">Senha</label>
+                    <InputText id="password" type="password" class="input-premium" @bind-Value="_loginModel.Password" placeholder="••••••••" />
+                    <ValidationMessage For="@(() => _loginModel.Password)" />
+                </div>
+            }
+            else
+            {
+                <div class="alert-premium alert-premium-success mb-4">
+                    <svg viewBox="0 0 24 24" width="20" height="20" class="me-2"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    <span>MFA Requerido. Por favor, insira o código gerado no seu aplicativo autenticador.</span>
+                </div>
+
+                <div class="form-group-premium">
+                    <label for="mfaCode">Código Autenticador (TOTP)</label>
+                    <InputText id="mfaCode" type="text" class="input-premium text-center tracking-widest font-mono text-lg" @bind-Value="_loginModel.MfaCode" maxlength="6" placeholder="000000" />
+                    <ValidationMessage For="@(() => _loginModel.MfaCode)" />
+                </div>
+            }
+
+            <div class="mt-4">
+                <button type="submit" class="btn-premium w-100" disabled="@_isLoading">
+                    @if (_isLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Verificando...</span>
+                    }
+                    else
+                    {
+                        <span>@(_requiresMfa ? "Confirmar Código" : "Entrar")</span>
+                    }
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Inject] private HttpClient HttpClient { get; set; } = default!;
+    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private readonly LocalLoginModel _loginModel = new();
+    private bool _isLoading = false;
+    private bool _requiresMfa = false;
+    private string? _errorMessage;
+
+    private async Task HandleLogin()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new LoginRequest(_loginModel.Email, _loginModel.Password, _loginModel.MfaCode);
+            var response = await HttpClient.PostAsJsonAsync("api/auth/login", request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _errorMessage = "E-mail ou senha incorretos.";
+                _isLoading = false;
+                return;
+            }
+
+            var apiResult = await response.Content.ReadFromJsonAsync<ClientResult<LoginResponse>>();
+            if (apiResult == null || apiResult.IsFailure || apiResult.Value == null)
+            {
+                _errorMessage = apiResult?.Error?.Message ?? "Erro inesperado ao efetuar o login.";
+                _isLoading = false;
+                return;
+            }
+
+            if (apiResult.Value.RequiresMfa)
+            {
+                _requiresMfa = true;
+                _loginModel.MfaCode = "";
+                _isLoading = false;
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(apiResult.Value.Token))
+            {
+                if (AuthStateProvider is JwtAuthenticationStateProvider jwtProvider)
+                {
+                    await jwtProvider.MarkUserAsAuthenticated(apiResult.Value.Token);
+                    Navigation.NavigateTo("");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Ocorreu um erro de rede: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    public class LocalLoginModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "O e-mail é obrigatório.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Insira um e-mail válido.")]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "A senha é obrigatória.")]
+        public string Password { get; set; } = string.Empty;
+
+        public string? MfaCode { get; set; }
+    }
+}
+
+<style>
+.login-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    padding: 1.5rem;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    border-radius: 20px;
+}
+
+.auth-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+}
+
+.tracking-widest {
+    letter-spacing: 0.25em;
+}
+
+.text-indigo {
+    color: var(--primary);
+}
+
+.w-100 {
+    width: 100%;
+}
+</style>

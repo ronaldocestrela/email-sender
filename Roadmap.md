@@ -113,11 +113,11 @@ Este roadmap define as etapas e subetapas para a construção de ponta a ponta d
 - [x] Implementar componentes básicos de layout utilizando CSS moderno e customizado (responsividade, paleta de cores elegantes e transições suaves).
 
 ### Etapa 6.2: Construção das Páginas Administrativas
-- [ ] Tela de Login / Cadastro e configuração inicial do MFA.
-- [ ] Dashboard Principal:
-  - Listagem e criação de novos Tenants (Exclusivo Admin Geral).
-  - Visualização de logs e histórico de disparos de e-mail filtrados por Tenant do usuário logado.
-  - Geração e revogação de chaves de API (`ApiKeys`).
+- [x] Tela de Login / Cadastro e configuração inicial do MFA.
+- [x] Dashboard Principal:
+  - [x] Listagem e criação de novos Tenants (Exclusivo Admin Geral).
+  - [x] Visualização de logs e histórico de disparos de e-mail filtrados por Tenant do usuário logado.
+  - [x] Geração e revogação de chaves de API (`ApiKeys`).
 
 ---
 

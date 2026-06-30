@@ -13,4 +13,9 @@ public interface IEmailHistoryRepository
     /// Adiciona um novo registro histórico de e-mail.
     /// </summary>
     Task AddAsync(EmailHistory history, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Recupera todo o histórico de e-mails para o Tenant do contexto.
+    /// </summary>
+    Task<System.Collections.Generic.List<EmailHistory>> GetAllAsync(CancellationToken cancellationToken = default);
 }

@@ -1,0 +1,306 @@
+@page "/security"
+@attribute [Authorize]
+@using Gateway.Blazor.Models
+@using Microsoft.AspNetCore.Components.Authorization
+
+<PageTitle>Segurança (MFA) - Email Sender</PageTitle>
+
+<div class="dashboard-header mb-4">
+    <div>
+        <h1 class="page-title">Segurança (MFA)</h1>
+        <p class="text-secondary">Proteja sua conta corporativa ativando a Autenticação de Dois Fatores (MFA)</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6 offset-lg-3">
+        <div class="glass-panel">
+            <div class="text-center mb-4">
+                <svg class="brand-logo mb-2 @(_mfaEnabled ? "text-success" : "text-muted")" viewBox="0 0 24 24" width="48" height="48">
+                    <path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 15l-4-4 1.41-1.41L10 13.17l5.59-5.59L17 9l-7 7z"/>
+                </svg>
+                <h3 class="section-title">Autenticação em Duas Etapas</h3>
+                <p class="text-secondary text-sm">
+                    Status Atual: 
+                    @if (_mfaEnabled)
+                    {
+                        <strong class="text-success">ATIVADO</strong>
+                    }
+                    else
+                    {
+                        <strong class="text-muted">DESATIVADO</strong>
+                    }
+                </p>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_successMessage))
+            {
+                <div class="alert-premium alert-premium-success mb-4">
+                    <span>@_successMessage</span>
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <div class="alert-premium alert-premium-danger mb-4">
+                    <span>@_errorMessage</span>
+                </div>
+            }
+
+            @if (_mfaEnabled)
+            {
+                <div class="text-center py-3">
+                    <p class="text-secondary text-sm mb-4">
+                        Sua conta está protegida. O segundo fator de autenticação (TOTP) será solicitado a cada novo login.
+                    </p>
+                    <button class="btn btn-outline-danger border-glass w-100" @onclick="HandleDisableMfa" disabled="@_isLoading">
+                        @if (_isLoading)
+                        {
+                            <span>Desativando...</span>
+                        }
+                        else
+                        {
+                            <span>Desativar MFA</span>
+                        }
+                    </button>
+                </div>
+            }
+            else
+            {
+                @if (!_setupInitiated)
+                {
+                    <div class="text-center py-3">
+                        <p class="text-secondary text-sm mb-4">
+                            Ative o MFA para garantir que somente você tenha acesso à sua conta, mesmo que outra pessoa descubra sua senha.
+                        </p>
+                        <button class="btn-premium w-100" @onclick="HandleInitiateSetup" disabled="@_isLoading">
+                            @if (_isLoading)
+                            {
+                                <span>Inicializando...</span>
+                            }
+                            else
+                            {
+                                <span>Configurar MFA</span>
+                            }
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="setup-container">
+                        <ol class="setup-steps text-secondary text-sm ps-3 mb-4">
+                            <li class="mb-2">Escaneie o QR Code abaixo com seu aplicativo autenticador (Google/Microsoft Authenticator) ou insira a chave secreta manualmente.</li>
+                            <li class="mb-2">Digite o código temporário de 6 dígitos gerado pelo aplicativo para confirmar a ativação.</li>
+                        </ol>
+
+                        <!-- QR Code Canvas Container -->
+                        <div class="d-flex flex-column align-items-center mb-4">
+                            <div id="qrcode-canvas" class="qrcode-wrapper p-3 bg-white rounded mb-2"></div>
+                            <div class="text-center font-mono text-light bg-dark px-3 py-2 rounded border-glass select-all text-xs">
+                                Chave: <strong>@_setupSecret</strong>
+                            </div>
+                        </div>
+
+                        <EditForm Model="@_confirmModel" OnValidSubmit="HandleConfirmMfa">
+                            <DataAnnotationsValidator />
+
+                            <div class="form-group-premium text-center">
+                                <label for="confirmCode">Código de Confirmação (6 dígitos)</label>
+                                <InputText id="confirmCode" class="input-premium text-center tracking-widest font-mono text-lg" @bind-Value="_confirmModel.Code" maxlength="6" placeholder="000000" />
+                                <ValidationMessage For="@(() => _confirmModel.Code)" />
+                            </div>
+
+                            <div class="d-flex gap-3 mt-4">
+                                <button type="button" class="btn btn-premium-outline flex-1" @onclick="CancelSetup">
+                                    Cancelar
+                                </button>
+                                <button type="submit" class="btn-premium flex-1" disabled="@_isLoading">
+                                    Confirmar
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] private HttpClient HttpClient { get; set; } = default!;
+    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+
+    private bool _mfaEnabled = false;
+    private bool _setupInitiated = false;
+    private bool _isLoading = false;
+    private string? _setupSecret;
+    private string? _setupQrCodeUri;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    private readonly LocalConfirmMfaModel _confirmModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = state.User;
+        _mfaEnabled = user.FindFirst("MfaEnabled")?.Value?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false;
+    }
+
+    private async Task HandleInitiateSetup()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var response = await HttpClient.PostAsync("api/auth/mfa/setup", null);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ClientResult<MfaSetupResponse>>();
+                if (result != null && result.IsSuccess && result.Value != null)
+                {
+                    _setupSecret = result.Value.Secret;
+                    _setupQrCodeUri = result.Value.QrCodeUri;
+                    _setupInitiated = true;
+
+                    // Aguarda renderização e executa script js do QR code
+                    await Task.Delay(100);
+                    await JSRuntime.InvokeVoidAsync("generateQrCode", "qrcode-canvas", _setupQrCodeUri);
+                }
+                else
+                {
+                    _errorMessage = result?.Error?.Message ?? "Erro ao iniciar configuração do MFA.";
+                }
+            }
+            else
+            {
+                _errorMessage = "Falha de rede ao inicializar MFA.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Ocorreu um erro: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleConfirmMfa()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var request = new ConfirmMfaRequest(_confirmModel.Code, _setupSecret!);
+            var response = await HttpClient.PostAsJsonAsync("api/auth/mfa/confirm", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ClientResult>();
+                if (result != null && result.IsSuccess)
+                {
+                    _mfaEnabled = true;
+                    _setupInitiated = false;
+                    _successMessage = "MFA ativado com sucesso! Suas futuras sessões exigirão a chave temporária.";
+                    _confirmModel.Code = "";
+                }
+                else
+                {
+                    _errorMessage = result?.Error?.Message ?? "Código informado inválido.";
+                }
+            }
+            else
+            {
+                _errorMessage = "Falha ao enviar confirmação.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Erro: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleDisableMfa()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var response = await HttpClient.PostAsync("api/auth/mfa/disable", null);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ClientResult>();
+                if (result != null && result.IsSuccess)
+                {
+                    _mfaEnabled = false;
+                    _successMessage = "Autenticação em duas etapas desativada com sucesso.";
+                }
+                else
+                {
+                    _errorMessage = result?.Error?.Message ?? "Não foi possível desativar o MFA.";
+                }
+            }
+            else
+            {
+                _errorMessage = "Erro ao enviar solicitação de desativação.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Erro de rede: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void CancelSetup()
+    {
+        _setupInitiated = false;
+        _setupSecret = null;
+        _setupQrCodeUri = null;
+        _confirmModel.Code = "";
+        _errorMessage = null;
+    }
+
+    public class LocalConfirmMfaModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "O código é obrigatório.")]
+        [System.ComponentModel.DataAnnotations.StringLength(6, MinimumLength = 6, ErrorMessage = "O código deve conter exatamente 6 dígitos.")]
+        public string Code { get; set; } = string.Empty;
+    }
+}
+
+<style>
+.qrcode-wrapper {
+    display: inline-block;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.select-all {
+    user-select: all;
+    -webkit-user-select: all;
+}
+.tracking-widest {
+    letter-spacing: 0.25em;
+}
+.flex-1 {
+    flex: 1;
+}
+.qrcode-wrapper canvas, .qrcode-wrapper img {
+    display: block;
+}
+</style>

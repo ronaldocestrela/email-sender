@@ -32,6 +32,23 @@
         <span class="dismiss">🗙</span>
     </div>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        window.generateQrCode = (elementId, text) => {
+            var el = document.getElementById(elementId);
+            if (el) {
+                el.innerHTML = "";
+                new QRCode(el, {
+                    text: text,
+                    width: 180,
+                    height: 180,
+                    colorDark : "#0f172a",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            }
+        };
+    </script>
 </body>
 
 </html>

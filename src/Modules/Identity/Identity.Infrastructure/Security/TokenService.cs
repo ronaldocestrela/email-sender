@@ -43,7 +43,8 @@ public class TokenService : ITokenService
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(ClaimTypes.Role, user.Role),
-            new("TenantId", user.TenantId.ToString())
+            new("TenantId", user.TenantId.ToString()),
+            new("MfaEnabled", user.IsMfaEnabled.ToString().ToLowerInvariant())
         };
 
         var tokenDescriptor = new SecurityTokenDescriptor

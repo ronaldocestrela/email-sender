@@ -70,4 +70,12 @@ public class TenantRepository : ITenantRepository
         _context.Tenants.Update(tenant);
         await Task.CompletedTask;
     }
+
+    /// <summary>
+    /// Recupera todos os Tenants cadastrados no sistema.
+    /// </summary>
+    public async Task<System.Collections.Generic.List<Tenant>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Tenants.ToListAsync(cancellationToken);
+    }
 }

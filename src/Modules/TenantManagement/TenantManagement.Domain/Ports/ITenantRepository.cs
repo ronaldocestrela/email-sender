@@ -29,4 +29,9 @@ public interface ITenantRepository
     /// Atualiza o estado de um Tenant existente.
     /// </summary>
     Task UpdateAsync(Tenant tenant, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Recupera todos os Tenants cadastrados no sistema.
+    /// </summary>
+    Task<System.Collections.Generic.List<Tenant>> GetAllAsync(CancellationToken cancellationToken = default);
 }

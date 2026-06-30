@@ -1,0 +1,264 @@
+@page "/tenants"
+@attribute [Authorize(Roles = "Admin")]
+@using Gateway.Blazor.Models
+@using System.Globalization
+
+<PageTitle>Inquilinos (Tenants) - Email Sender</PageTitle>
+
+<div class="dashboard-header mb-4">
+    <div>
+        <h1 class="page-title">Administração de Inquilinos</h1>
+        <p class="text-secondary">Cadastre e monitore os Tenants parceiros que utilizam a infraestrutura de disparo</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Listagem -->
+    <div class="col-lg-8">
+        <div class="glass-panel">
+            <h3 class="section-title mb-4">Inquilinos Cadastrados</h3>
+
+            @if (_isLoading && _tenants.Count == 0)
+            {
+                <div class="loading-container">
+                    <div class="spinner-premium"></div>
+                    <div class="loading-text">Carregando tenants...</div>
+                </div>
+            }
+            else if (_tenants.Count == 0)
+            {
+                <div class="empty-state py-5 text-center">
+                    <svg class="text-muted mb-3" viewBox="0 0 24 24" width="48" height="48"><path fill="currentColor" d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm6 12h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V9h2v2zm0-4h-2V5h2v2zm8 12h-2v-2h2v2zm0-4h-2v-2h2v2z"/></svg>
+                    <h4 class="text-secondary">Nenhum Tenant registrado</h4>
+                    <p class="text-muted text-sm">Utilize o formulário lateral para registrar o primeiro inquilino.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-premium">
+                        <thead>
+                            <tr>
+                                <th>Nome Corporativo</th>
+                                <th>Domínio Principal</th>
+                                <th>Data de Criação</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tenant in _tenants)
+                            {
+                                <tr class="align-middle">
+                                    <td><strong class="text-light">@tenant.Name</strong></td>
+                                    <td><span class="font-mono text-secondary text-sm">@tenant.MainDomain</span></td>
+                                    <td><span class="text-secondary text-sm">@tenant.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture)</span></td>
+                                    <td>
+                                        @if (tenant.IsActive)
+                                        {
+                                            <span class="badge badge-success">Ativo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-danger">Bloqueado</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Novo Inquilino -->
+    <div class="col-lg-4">
+        <div class="glass-panel">
+            <h3 class="section-title mb-3">Registrar Inquilino</h3>
+            <p class="text-secondary text-sm mb-4">
+                Cadastre a conta corporativa de um cliente SaaS no sistema, associando seu domínio de envio padrão.
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(_successMessage))
+            {
+                <div class="alert-premium alert-premium-success mb-4">
+                    <span>@_successMessage</span>
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <div class="alert-premium alert-premium-danger mb-4">
+                    <span>@_errorMessage</span>
+                </div>
+            }
+
+            <EditForm Model="@_createModel" OnValidSubmit="HandleCreateTenant">
+                <DataAnnotationsValidator />
+
+                <div class="form-group-premium">
+                    <label for="name">Nome Corporativo</label>
+                    <InputText id="name" class="input-premium" @bind-Value="_createModel.Name" placeholder="ex: Acme Corp S/A" />
+                    <ValidationMessage For="@(() => _createModel.Name)" />
+                </div>
+
+                <div class="form-group-premium mt-3">
+                    <label for="domain">Domínio de Envio (Principal)</label>
+                    <InputText id="domain" class="input-premium" @bind-Value="_createModel.MainDomain" placeholder="ex: acme.com" />
+                    <ValidationMessage For="@(() => _createModel.MainDomain)" />
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn-premium w-100" disabled="@_isLoading">
+                        @if (_isLoading)
+                        {
+                            <span>Cadastrando...</span>
+                        }
+                        else
+                        {
+                            <span>Cadastrar Inquilino</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] private HttpClient HttpClient { get; set; } = default!;
+
+    private List<TenantResponse> _tenants = new();
+    private readonly LocalCreateTenantModel _createModel = new();
+    private bool _isLoading = false;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTenants();
+    }
+
+    private async Task LoadTenants()
+    {
+        _isLoading = true;
+        try
+        {
+            var response = await HttpClient.GetAsync("api/tenants");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ClientResult<List<TenantResponse>>>();
+                if (result != null && result.IsSuccess && result.Value != null)
+                {
+                    _tenants = result.Value;
+                }
+            }
+        }
+        catch
+        {
+            // Silencioso
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleCreateTenant()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var request = new CreateTenantRequest(_createModel.Name, _createModel.MainDomain);
+            var response = await HttpClient.PostAsJsonAsync("api/tenants", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ClientResult<TenantResponse>>();
+                if (result != null && result.IsSuccess)
+                {
+                    _successMessage = $"Tenant '{_createModel.Name}' cadastrado com sucesso com domínio '{_createModel.MainDomain}'.";
+                    _createModel.Name = "";
+                    _createModel.MainDomain = "";
+                    await LoadTenants(); // Recarrega
+                }
+                else
+                {
+                    _errorMessage = result?.Error?.Message ?? "Erro ao cadastrar Tenant.";
+                }
+            }
+            else
+            {
+                _errorMessage = "Erro ao enviar requisição de cadastro.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Erro de rede: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    public class LocalCreateTenantModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "O nome é obrigatório.")]
+        [System.ComponentModel.DataAnnotations.StringLength(100, MinimumLength = 3, ErrorMessage = "O nome deve conter entre 3 e 100 caracteres.")]
+        public string Name { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "O domínio principal é obrigatório.")]
+        [System.ComponentModel.DataAnnotations.RegularExpression(@"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", ErrorMessage = "Insira um formato de domínio válido (ex: dominio.com).")]
+        public string MainDomain { get; set; } = string.Empty;
+    }
+}
+
+<style>
+.font-mono {
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.table-premium {
+    width: 100%;
+    margin-bottom: 0;
+    color: var(--text-primary);
+    border-collapse: collapse;
+}
+.table-premium th {
+    font-family: var(--font-heading);
+    color: var(--text-secondary);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-glass);
+    padding: 1rem;
+}
+.table-premium td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.table-premium tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+.badge {
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+.badge-success {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.badge-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.w-100 {
+    width: 100%;
+}
+</style>

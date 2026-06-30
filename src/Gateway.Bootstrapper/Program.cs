@@ -58,6 +58,9 @@ builder.Services.AddScoped<EmailEngine.Application.Ports.ITenantSetter>(sp => sp
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
 builder.Services.AddScoped<ICreateTenantUseCase, CreateTenantUseCase>();
 builder.Services.AddScoped<IGenerateApiKeyUseCase, GenerateApiKeyUseCase>();
+builder.Services.AddScoped<IGetTenantsUseCase, GetTenantsUseCase>();
+builder.Services.AddScoped<IGetApiKeysUseCase, GetApiKeysUseCase>();
+builder.Services.AddScoped<IRevokeApiKeyUseCase, RevokeApiKeyUseCase>();
 
 // 4. Registro de Adapters, Serviços e Casos de Uso do Módulo Identity
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -69,6 +72,7 @@ builder.Services.AddScoped<IMfaUseCase, MfaUseCase>();
 
 // 5. Registro de Casos de Uso, Adapters de Envio e Repositórios do Email Engine
 builder.Services.AddScoped<ISendEmailUseCase, SendEmailUseCase>();
+builder.Services.AddScoped<IGetEmailHistoryUseCase, GetEmailHistoryUseCase>();
 builder.Services.AddScoped<IEmailHistoryRepository, EmailHistoryRepository>();
 builder.Services.AddScoped<IEmailProviderSettingsRepository, EmailProviderSettingsRepository>();
 

@@ -105,3 +105,44 @@ public record ApiKeyResponse(
     [property: JsonPropertyName("description")] string Description,
     [property: JsonPropertyName("createdAt")] DateTime CreatedAt
 );
+
+/// <summary>
+/// Detalhes de uma chave de API recuperada.
+/// </summary>
+public record ApiKeyDetailsResponse(
+    [property: JsonPropertyName("keyHash")] string KeyHash,
+    [property: JsonPropertyName("description")] string Description,
+    [property: JsonPropertyName("createdAt")] DateTime CreatedAt,
+    [property: JsonPropertyName("isRevoked")] bool IsRevoked
+);
+
+/// <summary>
+/// Detalhes de um log histórico de e-mail disparado.
+/// </summary>
+public record EmailHistoryResponse(
+    [property: JsonPropertyName("id")] Guid Id,
+    [property: JsonPropertyName("to")] string To,
+    [property: JsonPropertyName("subject")] string Subject,
+    [property: JsonPropertyName("senderDomain")] string SenderDomain,
+    [property: JsonPropertyName("sentAt")] DateTime SentAt,
+    [property: JsonPropertyName("isSuccess")] bool IsSuccess,
+    [property: JsonPropertyName("errorMessage")] string? ErrorMessage
+);
+
+/// <summary>
+/// Payload para geração de chaves de API.
+/// </summary>
+public record GenerateApiKeyRequest(
+    [property: JsonPropertyName("description")] string Description
+);
+
+/// <summary>
+/// Payload para solicitação de envio de e-mail.
+/// </summary>
+public record SendEmailRequest(
+    [property: JsonPropertyName("to")] string To,
+    [property: JsonPropertyName("subject")] string Subject,
+    [property: JsonPropertyName("body")] string Body,
+    [property: JsonPropertyName("senderDomain")] string SenderDomain,
+    [property: JsonPropertyName("templateVariables")] Dictionary<string, string> TemplateVariables
+);
