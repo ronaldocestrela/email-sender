@@ -12,7 +12,9 @@ O módulo segue a divisão hexagonal com isolamento absoluto de dados:
        ┌────────────────────────────────────────────────────────┐
        │             TenantManagement.Application               │
        │                      (Use Cases)                       │
-       │        CreateTenantUseCase, GenerateApiKeyUseCase       │
+       │    CreateTenantUseCase, GenerateApiKeyUseCase,         │
+       │    GetTenantsUseCase, GetApiKeysUseCase,               │
+       │    RevokeApiKeyUseCase                                 │
        └──────────┬──────────────────────────────────┬──────────┘
                   │ (Chama)                          │ (Implementa)
                   ▼                                  ▼
@@ -62,9 +64,11 @@ Centraliza os conceitos de inquilinato utilizando agregados com invariantes ríg
     * Carrega o Tenant correspondente pelo ID.
     * Invoca a geração de ApiKey de domínio, anexando-a à coleção do aggregate.
     * Salva as alterações e retorna a resposta com a chave em texto plano.
+  * `GetTenantsUseCase`, `GetApiKeysUseCase` e `RevokeApiKeyUseCase`: [TenantQueries.cs](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Application/UseCases/TenantQueries.cs)
+    * Casos de uso de leitura e controle administrativo para recuperar Tenants (Admin), listar as ApiKeys ativas/revogadas do inquilino atual e revogar tokens em tempo de execução.
 
 * **Portas de Saída (Ports):**
-  * [ITenantRepository.cs](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Domain/Ports/ITenantRepository.cs): Interface de acesso a dados.
+  * [ITenantRepository.cs](file:///home/rony/LPR/email-sender/src/Modules/TenantManagement/TenantManagement.Domain/Ports/ITenantRepository.cs): Interface de acesso a dados. Contém métodos de salvamento e `GetAllAsync()` para listagem geral de tenants.
 
 ---
 

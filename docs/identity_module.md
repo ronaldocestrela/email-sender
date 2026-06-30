@@ -86,7 +86,7 @@ Fornece as implementações concretas dos adapters tecnológicos.
   * Codificador/Decodificador Base32 nativo para manipulação de segredos.
   * Tolerância de compensação de tempo (clock-drift) de +/- 1 ciclo de 30 segundos (valida a janela anterior, atual e posterior).
 * **Token JWT Service:** [TokenService.cs](file:///home/rony/LPR/email-sender/src/Modules/Identity/Identity.Infrastructure/Security/TokenService.cs)
-  * Gera tokens JWT contendo as claims de `TenantId` do usuário, email e cargos (`Role`). A chave simétrica é recuperada do `JwtSettings:Secret` de configuração.
+  * Gera tokens JWT contendo as claims de `TenantId` do usuário, email, cargos (`Role`) e estado de ativação do MFA (`MfaEnabled`). A chave simétrica é recuperada do `JwtSettings:Secret` de configuração.
 
 ---
 

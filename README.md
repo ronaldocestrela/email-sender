@@ -49,9 +49,9 @@ src/
 
 Para entender as diretrizes de desenvolvimento do time, arquitetura e o plano de ação, acesse os guias a seguir:
 
-* **[ARCHITECTURE.md](file:///home/rony/LPR/email-sender/ARCHITECTURE.md) (Arquitetura e Guia de Desenvolvimento):** Detalhes das camadas hexagonais, matriz de referências entre projetos, estratégia de multi-tenancy e fluxo de mensageria assíncrona.
-* **[AGENTS.md](file:///home/rony/LPR/email-sender/AGENTS.md) (Diretrizes do Agente):** Regras de desenvolvimento, padrões de codificação (como o uso obrigatório de TDD, XML `<summary>` e Scalar) e o checklist de validação de PRs.
-* **[Roadmap.md](file:///home/rony/LPR/email-sender/Roadmap.md) (Roadmap de Execução):** Sequenciamento das fases de desenvolvimento, do setup inicial até o roteiro completo de testes manuais E2E.
+* **[ARCHITECTURE.md](ARCHITECTURE.md) (Arquitetura e Guia de Desenvolvimento):** Detalhes das camadas hexagonais, matriz de referências entre projetos, estratégia de multi-tenancy e fluxo de mensageria assíncrona.
+* **[AGENTS.md](AGENTS.md) (Diretrizes do Agente):** Regras de desenvolvimento, padrões de codificação (como o uso obrigatório de TDD, XML `<summary>` e Scalar) e o checklist de validação de PRs.
+* **[Roadmap.md](Roadmap.md) (Roadmap de Execução):** Sequenciamento das fases de desenvolvimento, do setup inicial até o roteiro completo de testes manuais E2E.
 
 ---
 
@@ -62,13 +62,50 @@ Este projeto utiliza o servidor MCP **Stitch** para integrações de ferramentas
 
 ---
 
-## 🛠️ Como Iniciar (Pré-requisitos Locais)
+## 🛠️ Como Iniciar e Rodar Localmente (Passo a Passo)
 
-1. **Docker Desktop/CLI:** Necessário para subir a infraestrutura de apoio (SQL Server, RabbitMQ, Mailpit).
-2. **.NET 10 SDK:** SDK do .NET instalado na máquina de desenvolvimento.
-3. **Inicialização do Ambiente:**
-   ```bash
-   docker compose up -d
-   ```
-4. **Execução das Migrações e Inicialização do Backend:**
-   Consulte os roteiros específicos no arquivo [Roadmap.md](file:///home/rony/LPR/email-sender/Roadmap.md).
+### 1. Pré-requisitos
+* **Docker Desktop / Docker CLI**
+* **.NET 10 SDK** instalado localmente.
+
+### 2. Inicializar a Infraestrutura (Containers)
+No diretório raiz do projeto, suba os containers locais (SQL Server, RabbitMQ e Mailpit):
+```bash
+docker compose up -d
+```
+
+### 3. Executar o Backend (Gateway.Bootstrapper)
+Com os containers rodando, inicie a API do backend:
+```bash
+dotnet run --project src/Gateway.Bootstrapper/Gateway.Bootstrapper.csproj
+```
+> [!NOTE]
+> No primeiro startup, o Entity Framework Core aplicará as migrations de banco automaticamente. O banco de dados vazio disparará o `DatabaseSeeder` que gera os dados de teste iniciais. **Copie a Chave de API impressa no console do backend** em nível de `Warning` para testes de disparos diretos.
+
+### 4. Executar o Frontend (Gateway.Blazor)
+Em outro terminal, execute o painel administrativo Blazor:
+```bash
+dotnet run --project src/Frontend/Gateway.Blazor/Gateway.Blazor.csproj
+```
+
+---
+
+## 🔗 Endpoints e Painéis de Acesso Local
+
+Após iniciar todos os projetos, os seguintes painéis e serviços estarão acessíveis:
+
+* **Painel Blazor (Frontend Admin):** [http://localhost:5139](http://localhost:5139)
+* **Documentação Scalar (Playground Backend):** [http://localhost:5090/scalar/v1](http://localhost:5090/scalar/v1)
+* **Mailpit (Visualizador Mock de E-mails):** [http://localhost:8025](http://localhost:8025)
+* **RabbitMQ Dashboard (Filas):** [http://localhost:15672](http://localhost:15672) (credenciais `guest`/`guest`)
+
+---
+
+## 🔑 Credenciais de Teste (Geradas pelo Seeder)
+
+* **Usuário Administrador (Login Blazor):**
+  * **E-mail:** `admin@admintent.com`
+  * **Senha:** `Admin@123`
+  * **Papel:** `Admin` (MFA desativado inicialmente)
+* **Chave de API:** Impressa nos logs do console do Backend (prefixo `es_live_...`). Utilize-a no cabeçalho HTTP `X-API-KEY` para testar disparos via `/api/emails/send`.
+

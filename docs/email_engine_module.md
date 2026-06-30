@@ -15,11 +15,12 @@ O módulo é integrado de forma assíncrona ao broker de mensageria:
                      [SendEmailConsumer]
                               │ (Chama)
                               ▼
-                ┌───────────────────────────┐
-                │   EmailEngine.Application │
-                │        (Use Cases)        │
-                │     SendEmailUseCase      │
-                └──────┬─────────────┬──────┘
+                 ┌───────────────────────────┐
+                 │   EmailEngine.Application │
+                 │        (Use Cases)        │
+                 │     SendEmailUseCase,      │
+                 │   GetEmailHistoryUseCase  │
+                 └──────┬─────────────┬──────┘
                        │ (Chama)     │ (Implementa)
                        ▼             ▼
   ┌────────────────────────┐     ┌─────────────────────────────┐
@@ -57,10 +58,12 @@ O módulo é integrado de forma assíncrona ao broker de mensageria:
     * Normaliza variáveis de template informadas em `TemplateVariables` substituindo padrões `{{key}}` no corpo e assunto.
     * Delega o envio físico para o port `IEmailSender`.
     * Grava o histórico de auditoria via `IEmailHistoryRepository`.
+  * `GetEmailHistoryUseCase`: [EmailQueries.cs](file:///home/rony/LPR/email-sender/src/Modules/EmailEngine/EmailEngine.Application/UseCases/EmailQueries.cs)
+    * Caso de uso para obter o histórico de e-mails disparados correspondentes ao Tenant autenticado na sessão.
 
 * **Portas de Saída (Ports):**
   * [IEmailSender.cs](file:///home/rony/LPR/email-sender/src/Modules/EmailEngine/EmailEngine.Application/Ports/IEmailSender.cs): Abstração para envio físico.
-  * [IEmailHistoryRepository.cs](file:///home/rony/LPR/email-sender/src/Modules/EmailEngine/EmailEngine.Application/Ports/IEmailHistoryRepository.cs): Persistência de logs.
+  * [IEmailHistoryRepository.cs](file:///home/rony/LPR/email-sender/src/Modules/EmailEngine/EmailEngine.Application/Ports/IEmailHistoryRepository.cs): Persistência de logs. Contém método `GetAllAsync()` para listagem com filtragem automática de tenant.
   * [IEmailProviderSettingsRepository.cs](file:///home/rony/LPR/email-sender/src/Modules/EmailEngine/EmailEngine.Application/Ports/IEmailProviderSettingsRepository.cs): Persistência de credenciais.
 
 ---
