@@ -87,7 +87,10 @@ public class EmailEngineDbContext : DbContext
             switch (entry.State)
             {
                 case EntityState.Added:
-                    entry.Entity.TenantId = CurrentTenantId;
+                    if (entry.Entity.TenantId == Guid.Empty)
+                    {
+                        entry.Entity.TenantId = CurrentTenantId;
+                    }
                     break;
                 case EntityState.Modified:
                     entry.Property(x => x.TenantId).IsModified = false;
